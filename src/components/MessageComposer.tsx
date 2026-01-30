@@ -146,7 +146,7 @@ export function MessageComposer() {
   }, [isValidTarget, calldata, targetAddress, sendTransactionAsync, toast])
 
   // Not connected state
-  if (!isConnected) {
+  if (false && !isConnected) {
     return (
       <Box
         textAlign="center"

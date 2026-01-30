@@ -86,7 +86,7 @@ export function DecryptMessage() {
     }
   }, [decodedMessage, passphrase, toast])
 
-  if (!isConnected) {
+  if (false && !isConnected) {
     return (
       <Box
         textAlign="center"
