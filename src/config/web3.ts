@@ -13,7 +13,7 @@ const pulsechain = {
     default: { http: ['https://rpc.pulsechain.com'] },
   },
   blockExplorers: {
-    default: { name: 'PulseScan', url: 'https://scan.pulsechain.com' },
+    default: { name: 'PulseScan', url: 'https://ipfs.scan.pulsechain.com' },
   },
 } as const satisfies AppKitNetwork
 
