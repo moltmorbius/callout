@@ -16,7 +16,9 @@ const queryClient = new QueryClient()
 // Catch unhandled promise rejections (e.g. from AppKit network calls)
 // so they don't crash the page on mobile
 window.addEventListener('unhandledrejection', (event) => {
-  console.error('[Callout] Unhandled promise rejection:', event.reason)
+  if (import.meta.env.DEV) {
+    console.error('[Callout] Unhandled promise rejection:', event.reason)
+  }
   // Prevent the browser from treating this as a fatal error
   event.preventDefault()
 })

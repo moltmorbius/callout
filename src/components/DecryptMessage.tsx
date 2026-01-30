@@ -246,6 +246,7 @@ export function DecryptMessage() {
           isDisabled={!calldataInput.trim() || isDecoding}
           isLoading={isDecoding}
           loadingText="Decoding..."
+          aria-label="Decode hex calldata into readable message"
           bg="rgba(99, 179, 237, 0.15)"
           color="blue.300"
           border="1px solid"

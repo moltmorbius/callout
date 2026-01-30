@@ -56,7 +56,9 @@ try {
     },
   })
 } catch (err) {
-  console.error('[Callout] AppKit initialization failed:', err)
+  if (import.meta.env.DEV) {
+    console.error('[Callout] AppKit initialization failed:', err)
+  }
 }
 
 export { appKit, pulsechain }

@@ -21,7 +21,9 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: { componentStack?: string | null }) {
-    console.error('[Callout] React error boundary caught:', error, info)
+    if (import.meta.env.DEV) {
+      console.error('[Callout] React error boundary caught:', error, info)
+    }
   }
 
   render() {

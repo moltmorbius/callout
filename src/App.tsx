@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import {
   Box,
   Container,
@@ -10,11 +11,16 @@ import {
   VStack,
   HStack,
   Flex,
+  Spinner,
+  Center,
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
 import { Header } from './components/Header'
 import { MessageComposer } from './components/MessageComposer'
-import { DecryptMessage } from './components/DecryptMessage'
+
+const DecryptMessage = lazy(() =>
+  import('./components/DecryptMessage').then((m) => ({ default: m.DecryptMessage }))
+)
 
 const subtlePulse = keyframes`
   0%, 100% { opacity: 0.07; }
@@ -159,7 +165,15 @@ function App() {
                   <MessageComposer />
                 </TabPanel>
                 <TabPanel px={0} pt={6}>
-                  <DecryptMessage />
+                  <Suspense
+                    fallback={
+                      <Center py={12}>
+                        <Spinner color="blue.300" size="lg" />
+                      </Center>
+                    }
+                  >
+                    <DecryptMessage />
+                  </Suspense>
                 </TabPanel>
               </TabPanels>
             </Tabs>
