@@ -1,0 +1,71 @@
+import { createAppKit } from '@reown/appkit/react'
+import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
+import { mainnet, polygon, arbitrum, optimism, base, bsc } from '@reown/appkit/networks'
+import type { AppKitNetwork } from '@reown/appkit/networks'
+
+// PulseChain custom network
+const pulsechain = {
+  id: 369,
+  name: 'PulseChain',
+  nativeCurrency: { name: 'PLS', symbol: 'PLS', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://rpc.pulsechain.com'] },
+  },
+  blockExplorers: {
+    default: { name: 'PulseScan', url: 'https://scan.pulsechain.com' },
+  },
+} as const satisfies AppKitNetwork
+
+export const networks: [AppKitNetwork, ...AppKitNetwork[]] = [
+  mainnet,
+  pulsechain,
+  polygon,
+  arbitrum,
+  optimism,
+  base,
+  bsc,
+]
+
+// Reown project ID — get one at https://cloud.reown.com
+const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || 'demo-project-id'
+
+export const wagmiAdapter = new WagmiAdapter({
+  projectId,
+  networks,
+})
+
+export const appKit = createAppKit({
+  adapters: [wagmiAdapter],
+  networks,
+  projectId,
+  metadata: {
+    name: 'On-Chain Messenger',
+    description: 'Send on-chain messages to any address via transaction calldata',
+    url: 'https://onchain-messenger.app',
+    icons: ['https://onchain-messenger.app/icon.png'],
+  },
+  themeMode: 'dark',
+  themeVariables: {
+    '--w3m-color-mix': '#1a1a2e',
+    '--w3m-color-mix-strength': 20,
+    '--w3m-accent': '#e74c3c',
+  },
+})
+
+export { pulsechain }
+
+// Explorer URLs by chain ID
+export const explorerUrls: Record<number, string> = {
+  1: 'https://etherscan.io',
+  369: 'https://scan.pulsechain.com',
+  137: 'https://polygonscan.com',
+  42161: 'https://arbiscan.io',
+  10: 'https://optimistic.etherscan.io',
+  8453: 'https://basescan.org',
+  56: 'https://bscscan.com',
+}
+
+export function getExplorerTxUrl(chainId: number, txHash: string): string {
+  const base = explorerUrls[chainId] || 'https://etherscan.io'
+  return `${base}/tx/${txHash}`
+}
