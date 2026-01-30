@@ -15,62 +15,104 @@ import { DecryptMessage } from './components/DecryptMessage'
 
 function App() {
   return (
-    <Box minH="100vh" bg="#0a0a1a">
+    <Box minH="100vh" bg="#06060f" position="relative">
       <Header />
-      <Container maxW="900px" py={8}>
-        <VStack spacing={8} align="stretch">
-          {/* Tagline */}
-          <Box textAlign="center">
-            <Text fontSize="2xl" fontWeight="bold" color="gray.100" mb={2}>
-              Put scammers on blast. On-chain. Forever.
+
+      <Container maxW="720px" py={10} px={5} position="relative" zIndex={1}>
+        <VStack spacing={10} align="stretch">
+
+          {/* Hero */}
+          <Box textAlign="center" pt={4} pb={2} className="animate-fade-in">
+            <Text
+              fontSize={{ base: '2xl', md: '3xl' }}
+              fontWeight={800}
+              letterSpacing="-0.03em"
+              lineHeight={1.2}
+              bgGradient="linear(to-r, gray.100, gray.300)"
+              bgClip="text"
+              mb={3}
+            >
+              Put scammers on blast.
+              <br />
+              On-chain. Forever.
             </Text>
-            <Text color="gray.500" fontSize="sm">
-              Send messages directly to any address via transaction calldata.
-              Permanent. Immutable. Unstoppable.
+            <Text
+              color="gray.500"
+              fontSize="sm"
+              maxW="480px"
+              mx="auto"
+              lineHeight={1.7}
+            >
+              Encode messages as calldata and send them permanently to any EVM address.
+              No backend. No censorship. Just the blockchain.
             </Text>
           </Box>
 
           {/* Tabs */}
           <Tabs variant="soft-rounded" colorScheme="red" isFitted>
             <TabList
-              bg="whiteAlpha.50"
-              p={1}
-              borderRadius="xl"
-              border="1px solid"
-              borderColor="whiteAlpha.100"
+              bg="rgba(255,255,255,0.03)"
+              p="4px"
+              borderRadius="14px"
+              border="1px solid rgba(255,255,255,0.06)"
+              gap={1}
+              className="animate-fade-in animate-fade-in-delay-1"
             >
               <Tab
-                _selected={{ bg: 'red.600', color: 'white' }}
-                borderRadius="lg"
-                fontWeight="semibold"
+                borderRadius="11px"
+                fontSize="sm"
+                py="10px"
+                fontWeight={600}
+                color="gray.400"
+                _selected={{
+                  bg: 'red.600',
+                  color: 'white',
+                  boxShadow: '0 0 24px rgba(220, 38, 38, 0.3)',
+                }}
+                _hover={{ color: 'gray.200' }}
+                transition="all 0.2s"
               >
-                <Text mr={2}>📡</Text> Send Message
+                📡&nbsp;&nbsp;Send Callout
               </Tab>
               <Tab
-                _selected={{ bg: 'red.600', color: 'white' }}
-                borderRadius="lg"
-                fontWeight="semibold"
+                borderRadius="11px"
+                fontSize="sm"
+                py="10px"
+                fontWeight={600}
+                color="gray.400"
+                _selected={{
+                  bg: 'red.600',
+                  color: 'white',
+                  boxShadow: '0 0 24px rgba(220, 38, 38, 0.3)',
+                }}
+                _hover={{ color: 'gray.200' }}
+                transition="all 0.2s"
               >
-                <Text mr={2}>🔓</Text> Decrypt Message
+                🔓&nbsp;&nbsp;Decrypt
               </Tab>
             </TabList>
-            <TabPanels>
-              <TabPanel px={0}>
+
+            <TabPanels mt={6}>
+              <TabPanel px={0} className="animate-fade-in animate-fade-in-delay-2">
                 <MessageComposer />
               </TabPanel>
-              <TabPanel px={0}>
+              <TabPanel px={0} className="animate-fade-in animate-fade-in-delay-2">
                 <DecryptMessage />
               </TabPanel>
             </TabPanels>
           </Tabs>
 
           {/* Footer */}
-          <Box textAlign="center" py={4} borderTop="1px solid" borderColor="whiteAlpha.100">
-            <Text fontSize="xs" color="gray.600">
-              Messages are encoded as UTF-8 hex in transaction input data. Zero-value transfers only.
+          <Box
+            textAlign="center"
+            py={6}
+            borderTop="1px solid rgba(255,255,255,0.04)"
+          >
+            <Text fontSize="xs" color="gray.600" letterSpacing="0.02em">
+              Messages are encoded as UTF-8 hex in transaction calldata. Zero-value transfers.
             </Text>
-            <Text fontSize="xs" color="gray.700" mt={1}>
-              All on-chain data is public and permanent.
+            <Text fontSize="xs" color="gray.700" mt={1} letterSpacing="0.02em">
+              All on-chain data is public and permanent. Act accordingly.
             </Text>
           </Box>
         </VStack>
