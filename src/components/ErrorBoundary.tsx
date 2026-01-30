@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react'
 import { Box, Text, Button, VStack, Code } from '@chakra-ui/react'
+import { logError } from '../utils/logger'
 
 interface Props {
   children: ReactNode
@@ -21,7 +22,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: { componentStack?: string | null }) {
-    console.error('[Callout] React error boundary caught:', error, info)
+    logError('React error boundary caught:', error, info)
   }
 
   render() {

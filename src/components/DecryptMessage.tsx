@@ -12,9 +12,9 @@ import {
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { useAccount } from 'wagmi'
 import { decodeMessage, isLikelyText } from '../utils/encoding'
 import { decryptMessage, isEncryptedMessage } from '../utils/encryption'
+import { cardStyle } from '../shared/styles'
 
 /* ── keyframe animations ───────────────────────────────── */
 
@@ -37,16 +37,6 @@ const textReveal = keyframes`
   0%   { opacity: 0; transform: translateY(4px); }
   100% { opacity: 1; transform: translateY(0); }
 `
-
-/* ── card base style ───────────────────────────────────── */
-
-const cardStyle = {
-  bg: 'rgba(14, 14, 30, 0.6)',
-  borderRadius: '2xl',
-  border: '1px solid',
-  borderColor: 'whiteAlpha.50',
-  p: { base: 4, md: 6 },
-}
 
 /* ── scramble characters for decode animation ──────────── */
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*<>{}[]'
@@ -96,7 +86,6 @@ function useScrambleText(target: string | null, active: boolean, durationMs = 90
 /* ── component ─────────────────────────────────────────── */
 
 export function DecryptMessage() {
-  const { isConnected: _isConnected } = useAccount()
   const toast = useToast()
 
   const [calldataInput, setCalldataInput] = useState('')
@@ -231,6 +220,7 @@ export function DecryptMessage() {
           placeholder="0x48656c6c6f... or raw hex calldata"
           value={calldataInput}
           onChange={(e) => setCalldataInput(e.target.value)}
+          aria-label="Hex calldata input"
           fontFamily="mono"
           fontSize="sm"
           bg="rgba(6, 6, 15, 0.8)"
@@ -256,6 +246,7 @@ export function DecryptMessage() {
           isDisabled={!calldataInput.trim() || isDecoding}
           isLoading={isDecoding}
           loadingText="Decoding..."
+          aria-label="Decode hex calldata into readable message"
           bg="rgba(99, 179, 237, 0.15)"
           color="blue.300"
           border="1px solid"
@@ -480,6 +471,7 @@ export function DecryptMessage() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && passphrase) handleDecrypt()
                     }}
+                    aria-label="Decryption passphrase"
                     type="password"
                     fontSize="sm"
                     fontFamily="mono"
@@ -510,6 +502,7 @@ export function DecryptMessage() {
                     isLoading={isDecrypting}
                     loadingText="..."
                     isDisabled={!passphrase}
+                    aria-label="Decrypt message with passphrase"
                     _hover={{
                       bg: 'rgba(236, 201, 75, 0.25)',
                       transform: 'translateY(-1px)',
