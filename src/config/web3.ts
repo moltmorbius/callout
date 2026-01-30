@@ -64,7 +64,7 @@ export { appKit, pulsechain }
 // Explorer URLs by chain ID
 export const explorerUrls: Record<number, string> = {
   1: 'https://etherscan.io',
-  369: 'https://scan.pulsechain.com',
+  369: 'https://ipfs.scan.pulsechain.com',
   137: 'https://polygonscan.com',
   42161: 'https://arbiscan.io',
   10: 'https://optimistic.etherscan.io',
