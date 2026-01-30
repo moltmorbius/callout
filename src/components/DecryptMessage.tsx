@@ -8,19 +8,19 @@ import {
   Button,
   Code,
   useToast,
-  Flex,
+  Collapse,
 } from '@chakra-ui/react'
 import { useState, useCallback } from 'react'
 import { useAccount } from 'wagmi'
 import { decodeMessage, isLikelyText } from '../utils/encoding'
 import { decryptMessage, isEncryptedMessage } from '../utils/encryption'
 
-const card = {
-  bg: 'rgba(255,255,255,0.02)',
-  borderRadius: '16px',
-  border: '1px solid rgba(255,255,255,0.06)',
-  p: 6,
-  transition: 'all 0.2s',
+const cardStyle = {
+  bg: 'rgba(14, 14, 30, 0.6)',
+  borderRadius: '2xl',
+  border: '1px solid',
+  borderColor: 'whiteAlpha.50',
+  p: { base: 4, md: 6 },
 }
 
 export function DecryptMessage() {
@@ -47,7 +47,7 @@ export function DecryptMessage() {
     try {
       const decoded = decodeMessage(hex as `0x${string}`)
       if (!isLikelyText(hex as `0x${string}`)) {
-        setError('Decoded data does not appear to contain readable text.')
+        setError('The decoded data does not appear to be a text message.')
         setDecodedMessage(decoded)
         return
       }
@@ -55,14 +55,14 @@ export function DecryptMessage() {
 
       if (isEncryptedMessage(decoded)) {
         toast({
-          title: 'Encrypted payload detected',
+          title: 'Encrypted message detected',
           description: 'Enter the passphrase to decrypt.',
           status: 'info',
           duration: 3000,
         })
       }
     } catch {
-      setError('Invalid hex data. Check the input and try again.')
+      setError('Failed to decode. Make sure the input is valid hex calldata.')
     }
   }, [calldataInput, toast])
 
@@ -75,12 +75,12 @@ export function DecryptMessage() {
       const plain = await decryptMessage(decodedMessage, passphrase)
       setDecryptedMessage(plain)
       toast({
-        title: 'Decrypted.',
+        title: 'Decrypted!',
         status: 'success',
         duration: 3000,
       })
     } catch {
-      setError('Decryption failed — wrong passphrase or corrupted data.')
+      setError('Decryption failed. Wrong passphrase or corrupted data.')
     } finally {
       setIsDecrypting(false)
     }
@@ -90,32 +90,30 @@ export function DecryptMessage() {
     return (
       <Box
         textAlign="center"
-        py={20}
-        px={8}
-        {...card}
-        borderStyle="dashed"
-        borderColor="rgba(255,255,255,0.08)"
+        py={{ base: 12, md: 20 }}
+        px={6}
+        {...cardStyle}
       >
         <Box
-          w="56px"
-          h="56px"
-          borderRadius="16px"
-          bg="rgba(99, 102, 241, 0.08)"
-          border="1px solid rgba(99, 102, 241, 0.2)"
+          w="64px"
+          h="64px"
+          borderRadius="2xl"
+          bg="rgba(99, 179, 237, 0.08)"
+          border="1px solid"
+          borderColor="rgba(99, 179, 237, 0.15)"
           display="flex"
           alignItems="center"
           justifyContent="center"
           mx="auto"
           mb={5}
-          fontSize="2xl"
         >
-          🔓
+          <Text fontSize="2xl">🔓</Text>
         </Box>
-        <Text fontSize="md" color="gray.300" fontWeight={600} mb={2}>
-          Wallet not connected
+        <Text fontSize="lg" fontWeight="700" color="whiteAlpha.700" mb={2}>
+          Wallet Required
         </Text>
-        <Text fontSize="sm" color="gray.500" mb={6} maxW="320px" mx="auto">
-          Connect your wallet to decode on-chain callout messages.
+        <Text fontSize="sm" color="whiteAlpha.400" mb={6} maxW="300px" mx="auto">
+          Connect your wallet to decode on-chain messages
         </Text>
         <Box display="inline-block">
           <appkit-button />
@@ -125,198 +123,237 @@ export function DecryptMessage() {
   }
 
   return (
-    <VStack spacing={5} align="stretch">
-
-      {/* ── CALLDATA INPUT ── */}
-      <Box {...card}>
-        <Flex align="center" mb={4} gap={3}>
-          <Box
-            w="28px" h="28px" borderRadius="8px"
-            bg="rgba(99, 102, 241, 0.1)"
-            border="1px solid rgba(99, 102, 241, 0.2)"
-            display="flex" alignItems="center" justifyContent="center"
-            fontSize="sm"
+    <VStack spacing={4} align="stretch">
+      {/* Input Section */}
+      <Box
+        {...cardStyle}
+        borderColor="rgba(99, 179, 237, 0.12)"
+        position="relative"
+        overflow="hidden"
+        _before={{
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '1px',
+          bgGradient: 'linear(to-r, transparent, rgba(99,179,237,0.3), transparent)',
+        }}
+      >
+        <HStack spacing={2} mb={4}>
+          <Text fontSize="md">🔍</Text>
+          <Text
+            fontSize="xs"
+            fontWeight="800"
+            letterSpacing="0.1em"
+            textTransform="uppercase"
+            color="blue.300"
           >
-            🔍
-          </Box>
-          <Box>
-            <Text fontWeight={600} fontSize="sm" color="gray.200" lineHeight={1}>
-              Transaction Calldata
-            </Text>
-            <Text fontSize="xs" color="gray.600" mt={0.5}>
-              Paste the hex input data from any transaction
-            </Text>
-          </Box>
-        </Flex>
-
+            Transaction Calldata
+          </Text>
+        </HStack>
+        <Text fontSize="xs" color="whiteAlpha.300" mb={3}>
+          Paste the hex input data from a transaction to decode the hidden message.
+        </Text>
         <Textarea
           placeholder="0x48656c6c6f..."
           value={calldataInput}
           onChange={(e) => setCalldataInput(e.target.value)}
           fontFamily="mono"
           fontSize="sm"
-          bg="rgba(0,0,0,0.4)"
-          borderColor="rgba(255,255,255,0.08)"
-          _hover={{ borderColor: 'rgba(99, 102, 241, 0.3)' }}
-          _focus={{
-            borderColor: 'rgba(99, 102, 241, 0.5)',
-            boxShadow: '0 0 0 1px rgba(99, 102, 241, 0.3)',
-          }}
-          _placeholder={{ color: 'gray.600' }}
-          borderRadius="12px"
+          bg="rgba(6, 6, 15, 0.8)"
+          borderColor="whiteAlpha.100"
           rows={4}
-          mb={4}
+          mb={3}
+          _focus={{
+            borderColor: 'blue.400',
+            boxShadow: '0 0 0 1px rgba(99, 179, 237, 0.3), 0 0 20px rgba(99, 179, 237, 0.08)',
+          }}
         />
-
         <Button
+          size="lg"
           width="full"
           h="48px"
-          borderRadius="12px"
-          bg="rgba(99, 102, 241, 0.15)"
-          color="gray.200"
-          border="1px solid rgba(99, 102, 241, 0.3)"
-          fontWeight={600}
           fontSize="sm"
-          _hover={{
-            bg: 'rgba(99, 102, 241, 0.25)',
-            boxShadow: '0 0 20px rgba(99, 102, 241, 0.15)',
-          }}
-          _active={{ bg: 'rgba(99, 102, 241, 0.3)' }}
-          _disabled={{ opacity: 0.4, cursor: 'not-allowed' }}
-          isDisabled={!calldataInput.trim()}
+          fontWeight="800"
+          letterSpacing="0.05em"
+          textTransform="uppercase"
           onClick={handleDecode}
+          isDisabled={!calldataInput.trim()}
+          bg="rgba(99, 179, 237, 0.15)"
+          color="blue.300"
+          border="1px solid"
+          borderColor="rgba(99, 179, 237, 0.25)"
+          borderRadius="xl"
+          _hover={{
+            bg: 'rgba(99, 179, 237, 0.25)',
+            transform: 'translateY(-1px)',
+            boxShadow: '0 4px 20px rgba(99, 179, 237, 0.15)',
+          }}
+          _active={{
+            transform: 'translateY(0)',
+          }}
+          _disabled={{
+            bg: 'whiteAlpha.50',
+            color: 'whiteAlpha.300',
+            borderColor: 'whiteAlpha.50',
+            cursor: 'not-allowed',
+            _hover: {
+              bg: 'whiteAlpha.50',
+              transform: 'none',
+              boxShadow: 'none',
+            },
+          }}
           transition="all 0.2s"
         >
-          🔓&nbsp;&nbsp;Decode Message
+          🔓 Decode Message
         </Button>
       </Box>
 
-      {/* ── ERROR ── */}
-      {error && (
-        <Box
-          py={3}
-          px={4}
-          borderRadius="12px"
-          bg="rgba(234, 179, 8, 0.06)"
-          border="1px solid rgba(234, 179, 8, 0.2)"
-        >
-          <Flex align="center" gap={2}>
-            <Text fontSize="sm">⚠️</Text>
-            <Text fontSize="sm" color="yellow.300" fontWeight={500}>
-              {error}
-            </Text>
-          </Flex>
-        </Box>
-      )}
-
-      {/* ── DECODED RESULT ── */}
-      {decodedMessage !== null && (
-        <Box {...card} borderColor="rgba(99, 102, 241, 0.15)">
-          <Flex align="center" gap={2} mb={4}>
-            <Box w="6px" h="6px" borderRadius="full" bg="indigo.400" />
-            <Text
-              fontSize="xs"
-              color="gray.500"
-              fontWeight={600}
-              letterSpacing="0.08em"
-              textTransform="uppercase"
-            >
-              Decoded Message
-            </Text>
-          </Flex>
-
+      {/* Error */}
+      <Collapse in={!!error} animateOpacity>
+        {error && (
           <Box
-            bg="rgba(0,0,0,0.4)"
-            p={5}
-            borderRadius="12px"
-            border="1px solid rgba(255,255,255,0.04)"
+            p={4}
+            borderRadius="xl"
+            bg="rgba(236, 201, 75, 0.06)"
+            border="1px solid"
+            borderColor="rgba(236, 201, 75, 0.2)"
           >
-            <Text fontSize="sm" whiteSpace="pre-wrap" lineHeight={1.7} color="gray.200">
-              {decodedMessage}
-            </Text>
+            <HStack>
+              <Text fontSize="sm" color="yellow.300">⚠</Text>
+              <Text fontSize="sm" color="yellow.200">
+                {error}
+              </Text>
+            </HStack>
           </Box>
+        )}
+      </Collapse>
 
-          {/* Decrypt section for encrypted messages */}
-          {isEncryptedMessage(decodedMessage) && (
-            <Box mt={5}>
-              <Flex align="center" gap={2} mb={3}>
-                <Text fontSize="sm">🔒</Text>
-                <Text fontSize="sm" color="yellow.300" fontWeight={600}>
-                  Encrypted payload — enter passphrase to decrypt
-                </Text>
-              </Flex>
-              <HStack>
-                <Input
-                  placeholder="Passphrase..."
-                  value={passphrase}
-                  onChange={(e) => setPassphrase(e.target.value)}
-                  type="password"
-                  bg="rgba(0,0,0,0.4)"
-                  borderColor="rgba(255,255,255,0.08)"
-                  _focus={{
-                    borderColor: 'yellow.500',
-                    boxShadow: '0 0 0 1px rgba(234,179,8,0.3)',
-                  }}
-                  h="48px"
-                  borderRadius="12px"
-                  fontSize="sm"
-                />
-                <Button
-                  h="48px"
-                  px={6}
-                  borderRadius="12px"
-                  bg="rgba(234, 179, 8, 0.15)"
-                  color="yellow.200"
-                  border="1px solid rgba(234, 179, 8, 0.3)"
-                  fontWeight={600}
-                  fontSize="sm"
-                  _hover={{ bg: 'rgba(234, 179, 8, 0.25)' }}
-                  _disabled={{ opacity: 0.4 }}
-                  onClick={handleDecrypt}
-                  isLoading={isDecrypting}
-                  isDisabled={!passphrase}
-                >
-                  Decrypt
-                </Button>
-              </HStack>
-            </Box>
-          )}
-
-          {/* Decrypted result */}
-          {decryptedMessage && (
-            <Box
-              mt={5}
-              p={4}
-              bg="rgba(34, 197, 94, 0.06)"
-              borderRadius="12px"
-              border="1px solid rgba(34, 197, 94, 0.2)"
-            >
-              <Flex align="center" gap={2} mb={2}>
-                <Box w="6px" h="6px" borderRadius="full" bg="green.400" />
-                <Text
-                  fontSize="xs"
-                  color="green.400"
-                  fontWeight={600}
-                  letterSpacing="0.06em"
-                  textTransform="uppercase"
-                >
-                  Decrypted
-                </Text>
-              </Flex>
-              <Code
-                bg="transparent"
+      {/* Decoded Result */}
+      <Collapse in={decodedMessage !== null} animateOpacity>
+        {decodedMessage !== null && (
+          <Box
+            {...cardStyle}
+            borderColor="rgba(72, 187, 120, 0.15)"
+            position="relative"
+            overflow="hidden"
+            _before={{
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '1px',
+              bgGradient: 'linear(to-r, transparent, rgba(72,187,120,0.3), transparent)',
+            }}
+          >
+            <HStack spacing={2} mb={4}>
+              <Text fontSize="md">📬</Text>
+              <Text
+                fontSize="xs"
+                fontWeight="800"
+                letterSpacing="0.1em"
+                textTransform="uppercase"
                 color="green.300"
-                whiteSpace="pre-wrap"
-                display="block"
-                fontSize="sm"
-                fontFamily="mono"
               >
-                {decryptedMessage}
-              </Code>
+                Decoded Message
+              </Text>
+            </HStack>
+            <Box
+              bg="rgba(6, 6, 15, 0.9)"
+              p={4}
+              borderRadius="xl"
+              border="1px solid"
+              borderColor="whiteAlpha.50"
+            >
+              <Text fontSize="sm" whiteSpace="pre-wrap" color="whiteAlpha.700" lineHeight="1.7" fontFamily="mono">
+                {decodedMessage}
+              </Text>
             </Box>
-          )}
-        </Box>
-      )}
+
+            {/* Decrypt section for encrypted messages */}
+            {isEncryptedMessage(decodedMessage) && (
+              <Box mt={4}>
+                <HStack spacing={2} mb={3}>
+                  <Text fontSize="sm" color="yellow.300">🔒</Text>
+                  <Text fontSize="xs" color="yellow.300" fontWeight="700" letterSpacing="0.05em" textTransform="uppercase">
+                    Encrypted — Enter Passphrase
+                  </Text>
+                </HStack>
+                <HStack spacing={2}>
+                  <Input
+                    placeholder="Passphrase..."
+                    value={passphrase}
+                    onChange={(e) => setPassphrase(e.target.value)}
+                    type="password"
+                    fontSize="sm"
+                    bg="rgba(6, 6, 15, 0.8)"
+                    borderColor="whiteAlpha.100"
+                    h="44px"
+                    _focus={{
+                      borderColor: 'yellow.400',
+                      boxShadow: '0 0 0 1px rgba(236, 201, 75, 0.3)',
+                    }}
+                  />
+                  <Button
+                    h="44px"
+                    px={6}
+                    fontSize="sm"
+                    fontWeight="700"
+                    bg="rgba(236, 201, 75, 0.15)"
+                    color="yellow.300"
+                    border="1px solid"
+                    borderColor="rgba(236, 201, 75, 0.25)"
+                    borderRadius="lg"
+                    onClick={handleDecrypt}
+                    isLoading={isDecrypting}
+                    isDisabled={!passphrase}
+                    _hover={{
+                      bg: 'rgba(236, 201, 75, 0.25)',
+                    }}
+                    _disabled={{
+                      opacity: 0.4,
+                      cursor: 'not-allowed',
+                      _hover: { bg: 'rgba(236, 201, 75, 0.15)' },
+                    }}
+                  >
+                    Decrypt
+                  </Button>
+                </HStack>
+              </Box>
+            )}
+
+            {/* Decrypted result */}
+            <Collapse in={!!decryptedMessage} animateOpacity>
+              {decryptedMessage && (
+                <Box
+                  mt={4}
+                  p={4}
+                  bg="rgba(72, 187, 120, 0.08)"
+                  borderRadius="xl"
+                  border="1px solid"
+                  borderColor="rgba(72, 187, 120, 0.25)"
+                >
+                  <HStack mb={2}>
+                    <Text fontSize="sm" color="green.300" fontWeight="700">🔓 Decrypted</Text>
+                  </HStack>
+                  <Code
+                    bg="transparent"
+                    color="green.300"
+                    whiteSpace="pre-wrap"
+                    display="block"
+                    fontSize="sm"
+                    fontFamily="mono"
+                  >
+                    {decryptedMessage}
+                  </Code>
+                </Box>
+              )}
+            </Collapse>
+          </Box>
+        )}
+      </Collapse>
     </VStack>
   )
 }
