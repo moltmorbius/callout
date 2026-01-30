@@ -20,7 +20,7 @@ export function Header() {
       py={3}
     >
       <Flex justify="space-between" align="center" maxW="960px" mx="auto">
-        <HStack spacing={3} align="center">
+        <HStack spacing={3} align="center" minW={0} flex={1}>
           {/* Crosshair icon with pulse */}
           <Box
             w="40px"
@@ -62,7 +62,7 @@ export function Header() {
             </Text>
           </Box>
         </HStack>
-        <Box>
+        <Box flexShrink={0}>
           <appkit-button />
         </Box>
       </Flex>

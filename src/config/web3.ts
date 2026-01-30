@@ -34,25 +34,32 @@ export const wagmiAdapter = new WagmiAdapter({
   networks,
 })
 
-export const appKit = createAppKit({
-  adapters: [wagmiAdapter],
-  networks,
-  projectId,
-  metadata: {
-    name: 'Callout',
-    description: 'Put scammers on blast. On-chain. Forever.',
-    url: 'https://callout.city',
-    icons: ['https://callout.city/icon.png'],
-  },
-  themeMode: 'dark',
-  themeVariables: {
-    '--w3m-color-mix': '#1a1a2e',
-    '--w3m-color-mix-strength': 20,
-    '--w3m-accent': '#e74c3c',
-  },
-})
+// Initialize AppKit in a try/catch so a bad project ID or network error
+// doesn't crash the entire module import chain and blank the screen.
+let appKit: ReturnType<typeof createAppKit> | null = null
+try {
+  appKit = createAppKit({
+    adapters: [wagmiAdapter],
+    networks,
+    projectId,
+    metadata: {
+      name: 'Callout',
+      description: 'Put scammers on blast. On-chain. Forever.',
+      url: 'https://callout.city',
+      icons: ['https://callout.city/icon.png'],
+    },
+    themeMode: 'dark',
+    themeVariables: {
+      '--w3m-color-mix': '#1a1a2e',
+      '--w3m-color-mix-strength': 20,
+      '--w3m-accent': '#e74c3c',
+    },
+  })
+} catch (err) {
+  console.error('[Callout] AppKit initialization failed:', err)
+}
 
-export { pulsechain }
+export { appKit, pulsechain }
 
 // Explorer URLs by chain ID
 export const explorerUrls: Record<number, string> = {
