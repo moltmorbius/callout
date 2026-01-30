@@ -37,20 +37,20 @@ const cardStyle = {
   borderRadius: '2xl',
   border: '1px solid',
   borderColor: 'whiteAlpha.50',
-  p: { base: 4, md: 6 },
+  p: { base: 5, md: 6 },
 }
 
 // Section label component
 function SectionLabel({ icon, label, accent }: { icon: string; label: string; accent?: string }) {
   return (
-    <HStack spacing={2} mb={4}>
-      <Text fontSize="md">{icon}</Text>
+    <HStack spacing={2.5} mb={4}>
+      <Text fontSize="sm" opacity={0.7}>{icon}</Text>
       <Text
-        fontSize="xs"
+        fontSize="11px"
         fontWeight="800"
-        letterSpacing="0.1em"
+        letterSpacing="0.12em"
         textTransform="uppercase"
-        color={accent || 'whiteAlpha.500'}
+        color={accent || 'whiteAlpha.400'}
       >
         {label}
       </Text>
@@ -145,34 +145,35 @@ export function MessageComposer() {
     }
   }, [isValidTarget, calldata, targetAddress, sendTransactionAsync, toast])
 
-  // Not connected state
-  if (false && !isConnected) {
+  // Not connected state (bypassed for dev preview with ?demo)
+  const _isDemo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('demo')
+  if (!isConnected && !_isDemo) {
     return (
       <Box
         textAlign="center"
-        py={{ base: 12, md: 20 }}
+        py={{ base: 14, md: 20 }}
         px={6}
         {...cardStyle}
       >
         <Box
-          w="64px"
-          h="64px"
-          borderRadius="2xl"
-          bg="rgba(220, 38, 38, 0.08)"
+          w="56px"
+          h="56px"
+          borderRadius="xl"
+          bg="rgba(220, 38, 38, 0.06)"
           border="1px solid"
-          borderColor="rgba(220, 38, 38, 0.15)"
+          borderColor="rgba(220, 38, 38, 0.12)"
           display="flex"
           alignItems="center"
           justifyContent="center"
           mx="auto"
           mb={5}
         >
-          <Text fontSize="2xl">🔌</Text>
+          <Text fontSize="xl">🔌</Text>
         </Box>
-        <Text fontSize="lg" fontWeight="700" color="whiteAlpha.700" mb={2}>
+        <Text fontSize="md" fontWeight="700" color="whiteAlpha.600" mb={2}>
           Wallet Required
         </Text>
-        <Text fontSize="sm" color="whiteAlpha.400" mb={6} maxW="300px" mx="auto">
+        <Text fontSize="sm" color="whiteAlpha.300" mb={6} maxW="280px" mx="auto" lineHeight="1.6">
           Connect your wallet to start sending on-chain messages
         </Text>
         <Box display="inline-block">
@@ -184,10 +185,10 @@ export function MessageComposer() {
 
   return (
     <VStack spacing={4} align="stretch">
-      {/* Target Address */}
+      {/* ── Target Address ── */}
       <Box
         {...cardStyle}
-        borderColor="rgba(220, 38, 38, 0.15)"
+        borderColor="rgba(220, 38, 38, 0.12)"
         position="relative"
         overflow="hidden"
         _before={{
@@ -197,7 +198,7 @@ export function MessageComposer() {
           left: 0,
           right: 0,
           height: '1px',
-          bgGradient: 'linear(to-r, transparent, rgba(220,38,38,0.4), transparent)',
+          bgGradient: 'linear(to-r, transparent, rgba(220,38,38,0.5), transparent)',
         }}
       >
         <SectionLabel icon="⊕" label="Target Address" accent="red.400" />
@@ -205,8 +206,9 @@ export function MessageComposer() {
           <InputLeftElement
             pointerEvents="none"
             h="full"
+            pl={1}
           >
-            <Text color="red.500" fontSize="sm" fontFamily="mono" opacity={0.6}>
+            <Text color="red.600" fontSize="xs" fontFamily="mono" fontWeight="600">
               0x
             </Text>
           </InputLeftElement>
@@ -216,40 +218,42 @@ export function MessageComposer() {
             onChange={(e) => setTargetAddress(e.target.value)}
             fontFamily="mono"
             fontSize="sm"
-            bg="rgba(6, 6, 15, 0.8)"
-            pl="40px"
-            h="48px"
+            bg="rgba(6, 6, 15, 0.9)"
+            pl="42px"
+            h="50px"
             borderColor={
               targetAddress
                 ? isValidTarget
-                  ? 'rgba(220, 38, 38, 0.4)'
+                  ? 'rgba(220, 38, 38, 0.35)'
                   : 'orange.500'
                 : 'whiteAlpha.100'
             }
-            _hover={{ borderColor: 'rgba(220, 38, 38, 0.3)' }}
+            borderRadius="xl"
+            _hover={{ borderColor: 'rgba(220, 38, 38, 0.25)' }}
             _focus={{
               borderColor: 'red.500',
-              boxShadow: '0 0 0 1px rgba(220, 38, 38, 0.3), 0 0 20px rgba(220, 38, 38, 0.1)',
+              boxShadow: '0 0 0 1px rgba(220, 38, 38, 0.3), 0 0 30px rgba(220, 38, 38, 0.08)',
             }}
+            _placeholder={{ color: 'whiteAlpha.200' }}
           />
         </InputGroup>
         {targetAddress && !isValidTarget && (
-          <Text fontSize="xs" color="orange.400" mt={2} fontWeight="500">
+          <Text fontSize="xs" color="orange.400" mt={2} fontWeight="600">
             ⚠ Invalid address format
           </Text>
         )}
         {isValidTarget && (
-          <Text fontSize="xs" color="red.400" mt={2} fontWeight="500" opacity={0.7}>
+          <Text fontSize="xs" color="red.400" mt={2} fontWeight="600" opacity={0.8}>
             ✓ Target locked
           </Text>
         )}
       </Box>
 
-      {/* Return Address */}
+      {/* ── Return Address ── */}
       <Box {...cardStyle}>
         <SectionLabel icon="↩" label="Return Address" />
-        <Text fontSize="xs" color="whiteAlpha.300" mb={3}>
-          Your address for fund recovery. Injected into templates below.
+        <Text fontSize="xs" color="whiteAlpha.250" mb={3} lineHeight="1.5">
+          Your address for fund recovery. Injected into message templates.
         </Text>
         <Input
           placeholder={walletAddress || '0x...'}
@@ -257,37 +261,42 @@ export function MessageComposer() {
           onChange={(e) => setReturnAddress(e.target.value)}
           fontFamily="mono"
           fontSize="sm"
-          bg="rgba(6, 6, 15, 0.8)"
-          h="44px"
+          bg="rgba(6, 6, 15, 0.9)"
+          h="46px"
           borderColor="whiteAlpha.100"
+          borderRadius="xl"
           _hover={{ borderColor: 'whiteAlpha.200' }}
+          _placeholder={{ color: 'whiteAlpha.200' }}
         />
       </Box>
 
-      {/* Tone Selector */}
+      {/* ── Tone Selector ── */}
       <Box {...cardStyle}>
         <SectionLabel icon="✉" label="Choose Your Tone" />
 
-        <VStack spacing={2} align="stretch">
+        <VStack spacing={2.5} align="stretch">
           {messageTemplates.map((tpl) => {
             const isSelected = selectedTone === tpl.tone
-            const colorMap: Record<string, { bg: string; border: string; glow: string; badge: string }> = {
+            const colorMap: Record<string, { bg: string; border: string; glow: string; text: string; badge: string }> = {
               green: {
-                bg: 'rgba(72, 187, 120, 0.08)',
-                border: 'rgba(72, 187, 120, 0.35)',
-                glow: 'rgba(72, 187, 120, 0.12)',
+                bg: 'rgba(72, 187, 120, 0.07)',
+                border: 'rgba(72, 187, 120, 0.3)',
+                glow: '0 0 30px rgba(72, 187, 120, 0.1)',
+                text: 'green.300',
                 badge: 'green',
               },
               yellow: {
-                bg: 'rgba(236, 201, 75, 0.08)',
-                border: 'rgba(236, 201, 75, 0.35)',
-                glow: 'rgba(236, 201, 75, 0.12)',
+                bg: 'rgba(236, 201, 75, 0.07)',
+                border: 'rgba(236, 201, 75, 0.3)',
+                glow: '0 0 30px rgba(236, 201, 75, 0.1)',
+                text: 'yellow.300',
                 badge: 'yellow',
               },
               red: {
-                bg: 'rgba(220, 38, 38, 0.08)',
-                border: 'rgba(220, 38, 38, 0.35)',
-                glow: 'rgba(220, 38, 38, 0.12)',
+                bg: 'rgba(220, 38, 38, 0.07)',
+                border: 'rgba(220, 38, 38, 0.3)',
+                glow: '0 0 30px rgba(220, 38, 38, 0.12)',
+                text: 'red.300',
                 badge: 'red',
               },
             }
@@ -296,18 +305,33 @@ export function MessageComposer() {
             return (
               <Box
                 key={tpl.tone}
-                p={4}
+                position="relative"
+                pl={{ base: 5, md: 6 }}
+                pr={{ base: 3.5, md: 4 }}
+                py={{ base: 3.5, md: 4 }}
                 borderRadius="xl"
-                bg={isSelected ? colors.bg : 'rgba(10, 10, 20, 0.5)'}
+                bg={isSelected ? colors.bg : 'rgba(6, 6, 15, 0.5)'}
                 border="1px solid"
                 borderColor={isSelected ? colors.border : 'whiteAlpha.50'}
                 cursor="pointer"
-                transition="all 0.25s ease"
-                boxShadow={isSelected ? `0 0 25px ${colors.glow}` : 'none'}
+                transition="all 0.2s ease"
+                boxShadow={isSelected ? colors.glow : 'none'}
+                overflow="hidden"
                 _hover={{
                   borderColor: colors.border,
                   bg: colors.bg,
-                  transform: 'translateX(2px)',
+                }}
+                _before={{
+                  content: '""',
+                  position: 'absolute',
+                  left: 0,
+                  top: '12px',
+                  bottom: '12px',
+                  width: '3px',
+                  borderRadius: '0 3px 3px 0',
+                  bg: colors.border,
+                  opacity: isSelected ? 1 : 0.4,
+                  transition: 'opacity 0.2s',
                 }}
                 onClick={() => {
                   setSelectedTone(tpl.tone)
@@ -316,7 +340,13 @@ export function MessageComposer() {
                 role="button"
                 tabIndex={0}
               >
-                <Flex justify="space-between" align="center" mb={2}>
+                <Flex
+                  justify="space-between"
+                  align="center"
+                  mb={2}
+                  flexWrap={{ base: 'wrap', md: 'nowrap' }}
+                  gap={2}
+                >
                   <HStack spacing={2}>
                     <Text fontSize="lg">{tpl.emoji}</Text>
                     <Badge
@@ -326,20 +356,26 @@ export function MessageComposer() {
                       fontWeight="800"
                       letterSpacing="0.05em"
                       borderRadius="md"
-                      px={2}
+                      px={2.5}
+                      py={0.5}
                     >
                       {tpl.label}
                     </Badge>
                   </HStack>
-                  <Text fontSize="xs" color="whiteAlpha.300" fontWeight="500">
+                  <Text
+                    fontSize="xs"
+                    color={isSelected ? 'whiteAlpha.500' : 'whiteAlpha.300'}
+                    fontWeight="500"
+                  >
                     {tpl.description}
                   </Text>
                 </Flex>
                 <Text
                   fontSize="sm"
-                  color={isSelected ? 'whiteAlpha.700' : 'whiteAlpha.400'}
+                  color={isSelected ? 'whiteAlpha.600' : 'whiteAlpha.300'}
                   fontStyle="italic"
-                  lineHeight="1.5"
+                  lineHeight="1.6"
+                  pl={{ base: 0, md: 8 }}
                 >
                   &ldquo;{applyTemplate(tpl.template, returnAddress || walletAddress || '[address]')}&rdquo;
                 </Text>
@@ -349,18 +385,33 @@ export function MessageComposer() {
 
           {/* Custom message option */}
           <Box
-            p={4}
+            position="relative"
+            pl={{ base: 5, md: 6 }}
+            pr={{ base: 3.5, md: 4 }}
+            py={{ base: 3.5, md: 4 }}
             borderRadius="xl"
-            bg={selectedTone === 'custom' ? 'rgba(159, 122, 234, 0.08)' : 'rgba(10, 10, 20, 0.5)'}
+            bg={selectedTone === 'custom' ? 'rgba(159, 122, 234, 0.07)' : 'rgba(6, 6, 15, 0.5)'}
             border="1px solid"
-            borderColor={selectedTone === 'custom' ? 'rgba(159, 122, 234, 0.35)' : 'whiteAlpha.50'}
+            borderColor={selectedTone === 'custom' ? 'rgba(159, 122, 234, 0.3)' : 'whiteAlpha.50'}
             cursor="pointer"
-            transition="all 0.25s ease"
-            boxShadow={selectedTone === 'custom' ? '0 0 25px rgba(159, 122, 234, 0.12)' : 'none'}
+            transition="all 0.2s ease"
+            boxShadow={selectedTone === 'custom' ? '0 0 30px rgba(159, 122, 234, 0.1)' : 'none'}
+            overflow="hidden"
             _hover={{
-              borderColor: 'rgba(159, 122, 234, 0.35)',
-              bg: 'rgba(159, 122, 234, 0.08)',
-              transform: 'translateX(2px)',
+              borderColor: 'rgba(159, 122, 234, 0.3)',
+              bg: 'rgba(159, 122, 234, 0.07)',
+            }}
+            _before={{
+              content: '""',
+              position: 'absolute',
+              left: 0,
+              top: '12px',
+              bottom: '12px',
+              width: '3px',
+              borderRadius: '0 3px 3px 0',
+              bg: 'rgba(159, 122, 234, 0.5)',
+              opacity: selectedTone === 'custom' ? 1 : 0.4,
+              transition: 'opacity 0.2s',
             }}
             onClick={() => setSelectedTone('custom')}
             role="button"
@@ -375,7 +426,8 @@ export function MessageComposer() {
                 fontWeight="800"
                 letterSpacing="0.05em"
                 borderRadius="md"
-                px={2}
+                px={2.5}
+                py={0.5}
               >
                 Custom
               </Badge>
@@ -385,11 +437,12 @@ export function MessageComposer() {
             </HStack>
             <Collapse in={selectedTone === 'custom'} animateOpacity>
               <Textarea
-                placeholder="Type your message to the scammer..."
+                placeholder="Type your message..."
                 value={customMessage}
                 onChange={(e) => setCustomMessage(e.target.value)}
-                bg="rgba(6, 6, 15, 0.8)"
+                bg="rgba(6, 6, 15, 0.9)"
                 borderColor="whiteAlpha.100"
+                borderRadius="xl"
                 fontSize="sm"
                 rows={4}
                 onClick={(e) => e.stopPropagation()}
@@ -397,41 +450,46 @@ export function MessageComposer() {
                   borderColor: 'purple.400',
                   boxShadow: '0 0 0 1px rgba(159, 122, 234, 0.3)',
                 }}
+                _placeholder={{ color: 'whiteAlpha.200' }}
               />
             </Collapse>
           </Box>
         </VStack>
       </Box>
 
-      {/* Encryption */}
+      {/* ── Encryption ── */}
       <Box {...cardStyle}>
         <FormControl display="flex" alignItems="center" mb={encryptEnabled ? 4 : 0}>
-          <HStack flex={1} spacing={2}>
-            <Text fontSize="md">🔒</Text>
+          <HStack flex={1} spacing={2.5}>
+            <Text fontSize="sm" opacity={0.7}>🔒</Text>
             <FormLabel
               htmlFor="encrypt-toggle"
               mb={0}
-              fontSize="xs"
+              fontSize="11px"
               fontWeight="800"
-              letterSpacing="0.1em"
+              letterSpacing="0.12em"
               textTransform="uppercase"
-              color="whiteAlpha.500"
+              color="whiteAlpha.400"
+              cursor="pointer"
             >
               Encrypt Message
             </FormLabel>
           </HStack>
           <Tooltip
-            label="Encrypt with a passphrase. Share separately with the recipient."
+            label="Encrypt with a passphrase. Share it separately with the recipient."
             placement="top"
             bg="gray.800"
             color="gray.200"
             fontSize="xs"
-            borderRadius="md"
+            borderRadius="lg"
+            px={3}
+            py={2}
           >
             <Box>
               <Switch
                 id="encrypt-toggle"
                 colorScheme="red"
+                size="md"
                 isChecked={encryptEnabled}
                 onChange={(e) => setEncryptEnabled(e.target.checked)}
               />
@@ -445,24 +503,35 @@ export function MessageComposer() {
             onChange={(e) => setEncryptPassphrase(e.target.value)}
             type="password"
             fontSize="sm"
-            bg="rgba(6, 6, 15, 0.8)"
+            bg="rgba(6, 6, 15, 0.9)"
             borderColor="whiteAlpha.100"
-            h="44px"
+            borderRadius="xl"
+            h="46px"
+            _placeholder={{ color: 'whiteAlpha.200' }}
           />
         </Collapse>
       </Box>
 
-      {/* Preview & Send */}
+      {/* ── Preview & Send ── */}
       <Collapse in={!!finalMessage} animateOpacity>
         <Box
           {...cardStyle}
-          borderColor="whiteAlpha.100"
+          borderColor="rgba(220, 38, 38, 0.1)"
           position="relative"
           overflow="hidden"
+          _before={{
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '1px',
+            bgGradient: 'linear(to-r, transparent, rgba(220,38,38,0.3), transparent)',
+          }}
         >
           <SectionLabel icon="📤" label="Message Preview" />
 
-          {/* Message preview */}
+          {/* Message text */}
           <Box
             bg="rgba(6, 6, 15, 0.9)"
             p={4}
@@ -471,15 +540,22 @@ export function MessageComposer() {
             borderColor="whiteAlpha.50"
             mb={4}
           >
-            <Text fontSize="sm" whiteSpace="pre-wrap" color="whiteAlpha.700" lineHeight="1.7">
+            <Text fontSize="sm" whiteSpace="pre-wrap" color="whiteAlpha.600" lineHeight="1.7">
               {finalMessage}
             </Text>
           </Box>
 
-          {/* Calldata preview */}
+          {/* Calldata */}
           {calldata && (
             <Box mb={4}>
-              <Text fontSize="10px" color="whiteAlpha.300" mb={1} fontWeight="600" letterSpacing="0.05em" textTransform="uppercase">
+              <Text
+                fontSize="10px"
+                color="whiteAlpha.250"
+                mb={1.5}
+                fontWeight="700"
+                letterSpacing="0.08em"
+                textTransform="uppercase"
+              >
                 Calldata · {calldata.length} chars
               </Text>
               <Code
@@ -493,7 +569,7 @@ export function MessageComposer() {
                 bg="rgba(6, 6, 15, 0.9)"
                 border="1px solid"
                 borderColor="whiteAlpha.50"
-                color="whiteAlpha.400"
+                color="whiteAlpha.300"
                 fontFamily="mono"
               >
                 {calldata}
@@ -510,9 +586,11 @@ export function MessageComposer() {
               borderRadius="lg"
               border="1px solid"
               borderColor="whiteAlpha.50"
+              spacing={2}
             >
-              <Text fontSize="xs" color="whiteAlpha.300">⛽ Estimated gas:</Text>
-              <Text fontSize="xs" color="whiteAlpha.600" fontFamily="mono" fontWeight="600">
+              <Text fontSize="xs" color="whiteAlpha.300">⛽</Text>
+              <Text fontSize="xs" color="whiteAlpha.300">Estimated gas:</Text>
+              <Text fontSize="xs" color="whiteAlpha.500" fontFamily="mono" fontWeight="600">
                 {gasEstimate.toString()}
               </Text>
             </HStack>
@@ -525,69 +603,85 @@ export function MessageComposer() {
             h="56px"
             fontSize="sm"
             fontWeight="800"
-            letterSpacing="0.05em"
+            letterSpacing="0.08em"
             textTransform="uppercase"
             isLoading={isSending}
             loadingText="Broadcasting..."
             isDisabled={!isValidTarget || !calldata}
             onClick={handleSend}
-            bg="rgba(220, 38, 38, 0.9)"
-            color="white"
+            bg={(!isValidTarget || !calldata) ? 'rgba(220, 38, 38, 0.15)' : 'rgba(220, 38, 38, 0.9)'}
+            color={(!isValidTarget || !calldata) ? 'rgba(220, 38, 38, 0.4)' : 'white'}
+            border="1px solid"
+            borderColor={(!isValidTarget || !calldata) ? 'rgba(220, 38, 38, 0.1)' : 'rgba(220, 38, 38, 0.4)'}
             borderRadius="xl"
             _hover={{
-              bg: 'rgba(220, 38, 38, 1)',
+              bg: 'red.600',
               transform: 'translateY(-1px)',
-              boxShadow: '0 4px 30px rgba(220, 38, 38, 0.4)',
+              boxShadow: '0 6px 40px rgba(220, 38, 38, 0.35)',
             }}
             _active={{
               transform: 'translateY(0)',
               bg: 'red.700',
             }}
             _disabled={{
-              bg: 'whiteAlpha.100',
-              color: 'whiteAlpha.300',
               cursor: 'not-allowed',
+              opacity: 1,
               _hover: {
-                bg: 'whiteAlpha.100',
                 transform: 'none',
                 boxShadow: 'none',
+                bg: 'rgba(220, 38, 38, 0.15)',
               },
             }}
             transition="all 0.2s"
-            boxShadow="0 2px 20px rgba(220, 38, 38, 0.25)"
+            boxShadow={(!isValidTarget || !calldata) ? 'none' : '0 2px 25px rgba(220, 38, 38, 0.25)'}
           >
             ⊕ Send On-Chain Message
           </Button>
 
-          <Text fontSize="10px" color="whiteAlpha.200" textAlign="center" mt={3}>
-            This action is permanent and irreversible. The message will be written to the blockchain forever.
+          <Text fontSize="10px" color="whiteAlpha.150" textAlign="center" mt={3} lineHeight="1.5">
+            This action is permanent and irreversible. Your message will be inscribed on the blockchain forever.
           </Text>
 
           {/* Transaction result */}
           <Collapse in={!!lastTxHash} animateOpacity>
             {lastTxHash && (
               <Box
-                mt={4}
-                p={4}
-                bg="rgba(72, 187, 120, 0.08)"
+                mt={5}
+                p={5}
+                bg="rgba(72, 187, 120, 0.06)"
                 borderRadius="xl"
                 border="1px solid"
-                borderColor="rgba(72, 187, 120, 0.25)"
+                borderColor="rgba(72, 187, 120, 0.2)"
               >
-                <HStack mb={2}>
+                <HStack mb={3}>
+                  <Box
+                    w="24px"
+                    h="24px"
+                    borderRadius="full"
+                    bg="rgba(72, 187, 120, 0.15)"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <Text fontSize="xs" color="green.400">✓</Text>
+                  </Box>
                   <Text fontSize="sm" fontWeight="700" color="green.300">
-                    ✓ Message Broadcast
+                    Message Broadcast Successfully
                   </Text>
                 </HStack>
                 <Code
                   fontSize="xs"
-                  bg="transparent"
+                  bg="rgba(6, 6, 15, 0.5)"
                   color="green.400"
                   fontFamily="mono"
                   display="block"
-                  mb={2}
+                  p={3}
+                  borderRadius="lg"
+                  mb={3}
                   wordBreak="break-all"
                   whiteSpace="normal"
+                  border="1px solid"
+                  borderColor="rgba(72, 187, 120, 0.1)"
                 >
                   {lastTxHash}
                 </Code>
@@ -596,10 +690,11 @@ export function MessageComposer() {
                   isExternal
                   color="green.300"
                   fontSize="xs"
-                  fontWeight="600"
+                  fontWeight="700"
+                  letterSpacing="0.03em"
                   _hover={{ color: 'green.200', textDecoration: 'underline' }}
                 >
-                  View on Explorer →
+                  View on Block Explorer →
                 </Link>
               </Box>
             )}
