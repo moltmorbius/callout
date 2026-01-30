@@ -31,38 +31,13 @@ import {
 import { encodeMessage } from '../utils/encoding'
 import { encryptMessage } from '../utils/encryption'
 import { getExplorerTxUrl } from '../config/web3'
+import { cardStyle } from '../shared/styles'
+import { SectionLabel } from '../shared/SectionLabel'
 
 const targetGlow = keyframes`
   0%, 100% { box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.3), 0 0 20px rgba(220, 38, 38, 0.06); }
   50% { box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.5), 0 0 40px rgba(220, 38, 38, 0.12); }
 `
-
-// Shared card style
-const cardStyle = {
-  bg: 'rgba(14, 14, 30, 0.6)',
-  borderRadius: '2xl',
-  border: '1px solid',
-  borderColor: 'whiteAlpha.50',
-  p: { base: 5, md: 6 },
-}
-
-// Section label component
-function SectionLabel({ icon, label, accent }: { icon: string; label: string; accent?: string }) {
-  return (
-    <HStack spacing={2.5} mb={4}>
-      <Text fontSize="sm" opacity={0.7}>{icon}</Text>
-      <Text
-        fontSize="11px"
-        fontWeight="800"
-        letterSpacing="0.12em"
-        textTransform="uppercase"
-        color={accent || 'whiteAlpha.400'}
-      >
-        {label}
-      </Text>
-    </HStack>
-  )
-}
 
 // Tone card color config
 const toneColors: Record<string, {
@@ -257,6 +232,7 @@ export function MessageComposer() {
             placeholder="Paste scammer address..."
             value={targetAddress}
             onChange={(e) => setTargetAddress(e.target.value)}
+            aria-label="Target wallet address"
             fontFamily="mono"
             fontSize="sm"
             bg="rgba(6, 6, 15, 0.9)"
@@ -304,6 +280,7 @@ export function MessageComposer() {
           placeholder={walletAddress || '0x...'}
           value={returnAddress}
           onChange={(e) => setReturnAddress(e.target.value)}
+          aria-label="Return wallet address for fund recovery"
           fontFamily="mono"
           fontSize="sm"
           bg="rgba(6, 6, 15, 0.9)"
@@ -348,8 +325,17 @@ export function MessageComposer() {
                   setSelectedTone(tpl.tone)
                   setCustomMessage('')
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setSelectedTone(tpl.tone)
+                    setCustomMessage('')
+                  }
+                }}
                 role="button"
                 tabIndex={0}
+                aria-label={`Select ${tpl.label} tone: ${tpl.description}`}
+                aria-pressed={isSelected}
               >
                 {/* Big emoji icon */}
                 <Box
@@ -448,8 +434,16 @@ export function MessageComposer() {
             bg: 'rgba(159, 122, 234, 0.07)',
           }}
           onClick={() => setSelectedTone('custom')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setSelectedTone('custom')
+            }
+          }}
           role="button"
           tabIndex={0}
+          aria-label="Write a custom message"
+          aria-pressed={selectedTone === 'custom'}
         >
           <HStack spacing={2} mb={selectedTone === 'custom' ? 3 : 0} justify="center">
             <Text fontSize="lg">✍️</Text>
@@ -534,6 +528,7 @@ export function MessageComposer() {
             placeholder="Enter encryption passphrase..."
             value={encryptPassphrase}
             onChange={(e) => setEncryptPassphrase(e.target.value)}
+            aria-label="Encryption passphrase"
             type="password"
             fontSize="sm"
             bg="rgba(6, 6, 15, 0.9)"
