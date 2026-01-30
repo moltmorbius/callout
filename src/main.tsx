@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import theme from './config/theme'
 import { wagmiAdapter } from './config/web3'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { logError } from './utils/logger'
 import App from './App'
 
 const queryClient = new QueryClient()
@@ -16,9 +17,7 @@ const queryClient = new QueryClient()
 // Catch unhandled promise rejections (e.g. from AppKit network calls)
 // so they don't crash the page on mobile
 window.addEventListener('unhandledrejection', (event) => {
-  if (import.meta.env.DEV) {
-    console.error('[Callout] Unhandled promise rejection:', event.reason)
-  }
+  logError('Unhandled promise rejection:', event.reason)
   // Prevent the browser from treating this as a fatal error
   event.preventDefault()
 })

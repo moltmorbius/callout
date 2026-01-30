@@ -502,6 +502,7 @@ export function DecryptMessage() {
                     isLoading={isDecrypting}
                     loadingText="..."
                     isDisabled={!passphrase}
+                    aria-label="Decrypt message with passphrase"
                     _hover={{
                       bg: 'rgba(236, 201, 75, 0.25)',
                       transform: 'translateY(-1px)',

@@ -468,6 +468,7 @@ export function MessageComposer() {
               placeholder="Type your message..."
               value={customMessage}
               onChange={(e) => setCustomMessage(e.target.value)}
+              aria-label="Custom message text"
               bg="rgba(6, 6, 15, 0.9)"
               borderColor="whiteAlpha.100"
               borderRadius="xl"
@@ -637,6 +638,7 @@ export function MessageComposer() {
             loadingText="Broadcasting..."
             isDisabled={!isValidTarget || !calldata}
             onClick={handleSend}
+            aria-label="Send message on-chain permanently"
             bg={(!isValidTarget || !calldata) ? 'rgba(220, 38, 38, 0.15)' : 'rgba(220, 38, 38, 0.9)'}
             color={(!isValidTarget || !calldata) ? 'rgba(220, 38, 38, 0.4)' : 'white'}
             border="2px solid"

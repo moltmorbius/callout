@@ -2,6 +2,7 @@ import { createAppKit } from '@reown/appkit/react'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 import { mainnet, polygon, arbitrum, optimism, base, bsc } from '@reown/appkit/networks'
 import type { AppKitNetwork } from '@reown/appkit/networks'
+import { logError } from '../utils/logger'
 
 // PulseChain custom network
 const pulsechain = {
@@ -56,9 +57,7 @@ try {
     },
   })
 } catch (err) {
-  if (import.meta.env.DEV) {
-    console.error('[Callout] AppKit initialization failed:', err)
-  }
+  logError('AppKit initialization failed:', err)
 }
 
 export { appKit, pulsechain }
