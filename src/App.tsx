@@ -8,73 +8,210 @@ import {
   TabPanel,
   Text,
   VStack,
+  HStack,
+  Flex,
 } from '@chakra-ui/react'
+import { keyframes } from '@emotion/react'
 import { Header } from './components/Header'
 import { MessageComposer } from './components/MessageComposer'
 import { DecryptMessage } from './components/DecryptMessage'
 
+const subtlePulse = keyframes`
+  0%, 100% { opacity: 0.07; }
+  50% { opacity: 0.12; }
+`
+
 function App() {
   return (
-    <Box minH="100vh" bg="#0a0a1a">
-      <Header />
-      <Container maxW="900px" py={8}>
-        <VStack spacing={8} align="stretch">
-          {/* Tagline */}
-          <Box textAlign="center">
-            <Text fontSize="2xl" fontWeight="bold" color="gray.100" mb={2}>
-              Put scammers on blast. On-chain. Forever.
-            </Text>
-            <Text color="gray.500" fontSize="sm">
-              Send messages directly to any address via transaction calldata.
-              Permanent. Immutable. Unstoppable.
-            </Text>
-          </Box>
+    <Box minH="100vh" bg="#06060f" position="relative">
+      {/* Subtle background gradient */}
+      <Box
+        position="fixed"
+        top={0}
+        left={0}
+        right={0}
+        height="700px"
+        bgGradient="radial(ellipse at 50% -20%, rgba(220,38,38,0.08) 0%, transparent 70%)"
+        pointerEvents="none"
+        zIndex={0}
+        animation={`${subtlePulse} 8s ease-in-out infinite`}
+      />
+      {/* Secondary ambient glow */}
+      <Box
+        position="fixed"
+        bottom={0}
+        left={0}
+        right={0}
+        height="400px"
+        bgGradient="radial(ellipse at 50% 120%, rgba(99,179,237,0.03) 0%, transparent 70%)"
+        pointerEvents="none"
+        zIndex={0}
+      />
 
-          {/* Tabs */}
-          <Tabs variant="soft-rounded" colorScheme="red" isFitted>
-            <TabList
-              bg="whiteAlpha.50"
-              p={1}
-              borderRadius="xl"
-              border="1px solid"
-              borderColor="whiteAlpha.100"
+      <Box position="relative" zIndex={1}>
+        <Header />
+
+        <Container maxW="720px" px={{ base: 4, md: 6 }} py={{ base: 6, md: 10 }}>
+          <VStack spacing={{ base: 6, md: 8 }} align="stretch">
+            {/* Hero */}
+            <Box textAlign="center" pt={{ base: 6, md: 10 }} pb={{ base: 2, md: 4 }}>
+              {/* Big CALLOUT wordmark */}
+              <Text
+                fontSize={{ base: '4xl', md: '6xl' }}
+                fontWeight="900"
+                letterSpacing={{ base: '0.12em', md: '0.18em' }}
+                textTransform="uppercase"
+                bgGradient="linear(to-r, red.500, red.400, orange.400, red.400)"
+                bgClip="text"
+                lineHeight="1"
+                mb={4}
+              >
+                Callout
+              </Text>
+
+              <Text
+                fontSize={{ base: 'lg', md: '2xl' }}
+                fontWeight="800"
+                letterSpacing="-0.01em"
+                lineHeight="1.3"
+                mb={4}
+                color="whiteAlpha.800"
+              >
+                Put scammers on blast.{' '}
+                <Box
+                  as="span"
+                  bgGradient="linear(to-r, red.400, orange.300)"
+                  bgClip="text"
+                >
+                  On-chain. Forever.
+                </Box>
+              </Text>
+              <Text
+                color="whiteAlpha.350"
+                fontSize={{ base: 'sm', md: 'md' }}
+                maxW="480px"
+                mx="auto"
+                lineHeight="1.7"
+              >
+                Encode messages as calldata and send them permanently to any EVM address.
+                No backend. No censorship. Just the blockchain.
+              </Text>
+            </Box>
+
+            {/* Tabs */}
+            <Tabs variant="unstyled" isFitted>
+              <TabList
+                bg="rgba(14, 14, 30, 0.5)"
+                p="4px"
+                borderRadius="xl"
+                border="1px solid"
+                borderColor="whiteAlpha.50"
+              >
+                <Tab
+                  borderRadius="lg"
+                  fontWeight="700"
+                  fontSize="sm"
+                  letterSpacing="0.02em"
+                  color="whiteAlpha.400"
+                  py={2.5}
+                  transition="all 0.2s"
+                  _selected={{
+                    bg: 'rgba(220, 38, 38, 0.12)',
+                    color: 'red.300',
+                    border: '1px solid',
+                    borderColor: 'rgba(220, 38, 38, 0.25)',
+                  }}
+                  _hover={{
+                    color: 'whiteAlpha.700',
+                  }}
+                >
+                  <HStack spacing={2}>
+                    <Text fontSize="sm">📡</Text>
+                    <Text>Send Callout</Text>
+                  </HStack>
+                </Tab>
+                <Tab
+                  borderRadius="lg"
+                  fontWeight="700"
+                  fontSize="sm"
+                  letterSpacing="0.02em"
+                  color="whiteAlpha.400"
+                  py={2.5}
+                  transition="all 0.2s"
+                  _selected={{
+                    bg: 'rgba(99, 179, 237, 0.1)',
+                    color: 'blue.300',
+                    border: '1px solid',
+                    borderColor: 'rgba(99, 179, 237, 0.25)',
+                  }}
+                  _hover={{
+                    color: 'whiteAlpha.700',
+                  }}
+                >
+                  <HStack spacing={2}>
+                    <Text fontSize="sm">🔓</Text>
+                    <Text>Decrypt</Text>
+                  </HStack>
+                </Tab>
+              </TabList>
+              <TabPanels>
+                <TabPanel px={0} pt={6}>
+                  <MessageComposer />
+                </TabPanel>
+                <TabPanel px={0} pt={6}>
+                  <DecryptMessage />
+                </TabPanel>
+              </TabPanels>
+            </Tabs>
+
+            {/* Footer */}
+            <Box
+              textAlign="center"
+              py={8}
+              mt={4}
+              borderTop="1px solid"
+              borderColor="whiteAlpha.50"
             >
-              <Tab
-                _selected={{ bg: 'red.600', color: 'white' }}
-                borderRadius="lg"
-                fontWeight="semibold"
+              <Flex
+                justify="center"
+                align="center"
+                gap={2}
+                mb={3}
               >
-                <Text mr={2}>📡</Text> Send Message
-              </Tab>
-              <Tab
-                _selected={{ bg: 'red.600', color: 'white' }}
-                borderRadius="lg"
-                fontWeight="semibold"
-              >
-                <Text mr={2}>🔓</Text> Decrypt Message
-              </Tab>
-            </TabList>
-            <TabPanels>
-              <TabPanel px={0}>
-                <MessageComposer />
-              </TabPanel>
-              <TabPanel px={0}>
-                <DecryptMessage />
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-
-          {/* Footer */}
-          <Box textAlign="center" py={4} borderTop="1px solid" borderColor="whiteAlpha.100">
-            <Text fontSize="xs" color="gray.600">
-              Messages are encoded as UTF-8 hex in transaction input data. Zero-value transfers only.
-            </Text>
-            <Text fontSize="xs" color="gray.700" mt={1}>
-              All on-chain data is public and permanent.
-            </Text>
-          </Box>
-        </VStack>
-      </Container>
+                <Box
+                  w="22px"
+                  h="22px"
+                  borderRadius="md"
+                  bg="rgba(220, 38, 38, 0.1)"
+                  border="1px solid"
+                  borderColor="rgba(220, 38, 38, 0.2)"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  fontSize="10px"
+                >
+                  ⊕
+                </Box>
+                <Text
+                  fontSize="xs"
+                  fontWeight="800"
+                  letterSpacing="0.15em"
+                  textTransform="uppercase"
+                  color="whiteAlpha.300"
+                >
+                  callout.city
+                </Text>
+              </Flex>
+              <Text fontSize="xs" color="whiteAlpha.200" lineHeight="1.8">
+                Messages are encoded as UTF-8 hex in transaction calldata. Zero-value transfers only.
+              </Text>
+              <Text fontSize="xs" color="whiteAlpha.100" mt={0.5}>
+                All on-chain data is public and permanent. Act accordingly.
+              </Text>
+            </Box>
+          </VStack>
+        </Container>
+      </Box>
     </Box>
   )
 }

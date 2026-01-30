@@ -7,10 +7,15 @@ const config: ThemeConfig = {
 
 const theme = extendTheme({
   config,
+  fonts: {
+    heading: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    body: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    mono: "'JetBrains Mono', 'Fira Code', monospace",
+  },
   styles: {
     global: {
       body: {
-        bg: '#0a0a1a',
+        bg: '#06060f',
         color: 'gray.100',
       },
     },
@@ -28,21 +33,57 @@ const theme = extendTheme({
       800: '#500404',
       900: '#210000',
     },
+    surface: {
+      50: '#14142b',
+      100: '#1a1a3e',
+      200: '#10101f',
+      300: '#0d0d1a',
+      400: '#0a0a14',
+      500: '#06060f',
+    },
   },
   components: {
     Button: {
       defaultProps: {
         colorScheme: 'red',
       },
-    },
-    Tabs: {
       variants: {
-        'soft-rounded': {
-          tab: {
-            _selected: {
-              bg: 'red.600',
-              color: 'white',
+        solid: {
+          fontWeight: '700',
+          letterSpacing: '0.02em',
+        },
+      },
+    },
+    Input: {
+      variants: {
+        outline: {
+          field: {
+            fontFamily: "'JetBrains Mono', monospace",
+            bg: 'rgba(10, 10, 26, 0.8)',
+            borderColor: 'whiteAlpha.100',
+            _hover: {
+              borderColor: 'whiteAlpha.300',
             },
+            _focus: {
+              borderColor: 'red.500',
+              boxShadow: '0 0 0 1px rgba(229, 62, 62, 0.5)',
+            },
+          },
+        },
+      },
+    },
+    Textarea: {
+      variants: {
+        outline: {
+          fontFamily: "'JetBrains Mono', monospace",
+          bg: 'rgba(10, 10, 26, 0.8)',
+          borderColor: 'whiteAlpha.100',
+          _hover: {
+            borderColor: 'whiteAlpha.300',
+          },
+          _focus: {
+            borderColor: 'red.500',
+            boxShadow: '0 0 0 1px rgba(229, 62, 62, 0.5)',
           },
         },
       },

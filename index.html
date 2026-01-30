@@ -6,11 +6,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Callout — Put scammers on blast. On-chain. Forever.</title>
     <meta name="description" content="Put scammers on blast. On-chain. Forever. Send messages via transaction calldata to any EVM address." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+      * { box-sizing: border-box; }
       body {
         margin: 0;
-        background: #0a0a1a;
+        background: #06060f;
         color: #e2e8f0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+      
+      /* Scrollbar styling */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: #0a0a1a; }
+      ::-webkit-scrollbar-thumb { background: #1a1a3e; border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: #2a2a5e; }
+      
+      /* Pulse animation for send button */
+      @keyframes pulse-glow {
+        0%, 100% { box-shadow: 0 0 20px rgba(220, 38, 38, 0.3); }
+        50% { box-shadow: 0 0 40px rgba(220, 38, 38, 0.6); }
+      }
+      
+      /* Scan line animation for decrypt */
+      @keyframes scan-line {
+        0% { transform: translateY(-100%); }
+        100% { transform: translateY(100%); }
+      }
+      
+      /* Subtle gradient animation */
+      @keyframes gradient-shift {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+      }
+
+      /* Crosshair animation */
+      @keyframes crosshair-pulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
       }
     </style>
   </head>
