@@ -39,10 +39,10 @@ export const appKit = createAppKit({
   networks,
   projectId,
   metadata: {
-    name: 'On-Chain Messenger',
-    description: 'Send on-chain messages to any address via transaction calldata',
-    url: 'https://onchain-messenger.app',
-    icons: ['https://onchain-messenger.app/icon.png'],
+    name: 'Callout',
+    description: 'Put scammers on blast. On-chain. Forever.',
+    url: 'https://callout.city',
+    icons: ['https://callout.city/icon.png'],
   },
   themeMode: 'dark',
   themeVariables: {

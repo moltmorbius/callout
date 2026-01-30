@@ -22,11 +22,11 @@ function App() {
           {/* Tagline */}
           <Box textAlign="center">
             <Text fontSize="2xl" fontWeight="bold" color="gray.100" mb={2}>
-              Justice on the Blockchain
+              Put scammers on blast. On-chain. Forever.
             </Text>
             <Text color="gray.500" fontSize="sm">
               Send messages directly to any address via transaction calldata.
-              Permanent. Immutable. On-chain.
+              Permanent. Immutable. Unstoppable.
             </Text>
           </Box>
 

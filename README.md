@@ -1,12 +1,12 @@
-# 📡 On-Chain Messenger
+# 📡 Callout
 
-Send messages directly to any Ethereum/EVM address via transaction calldata. Permanent. Immutable. On-chain.
+**Put scammers on blast. On-chain. Forever.**
 
 ![Screenshot](screenshot-landing.png)
 
 ## What It Does
 
-On-Chain Messenger encodes human-readable messages as UTF-8 hex in transaction input data (calldata), then sends a zero-value transaction to the target address. The message becomes permanently recorded on-chain.
+Callout encodes human-readable messages as UTF-8 hex in transaction input data (calldata), then sends a zero-value transaction to the target address. The message becomes permanently recorded on-chain.
 
 ### Use Cases
 - **Scammer communication** — Send messages to addresses that stole funds
@@ -78,6 +78,10 @@ Get a free project ID at [cloud.reown.com](https://cloud.reown.com).
 2. Paste the calldata (input data) from a transaction
 3. Click "Decode Message" to see the plaintext
 4. If encrypted, enter the passphrase to decrypt
+
+## Domain
+
+[callout.city](https://callout.city)
 
 ## License
 

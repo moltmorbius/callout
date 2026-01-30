@@ -14,10 +14,10 @@ export function Header() {
           <Text fontSize="2xl">📡</Text>
           <Box>
             <Heading size="md" letterSpacing="tight">
-              On-Chain Messenger
+              Callout
             </Heading>
             <Text fontSize="xs" color="gray.500">
-              Send messages via transaction calldata
+              Put scammers on blast. On-chain. Forever.
             </Text>
           </Box>
         </HStack>
