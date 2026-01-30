@@ -1,4 +1,10 @@
 import { Box, Flex, Text, HStack } from '@chakra-ui/react'
+import { keyframes } from '@emotion/react'
+
+const pulseGlow = keyframes`
+  0%, 100% { box-shadow: 0 0 8px rgba(220, 38, 38, 0.3); }
+  50% { box-shadow: 0 0 16px rgba(220, 38, 38, 0.5), 0 0 30px rgba(220, 38, 38, 0.15); }
+`
 
 export function Header() {
   return (
@@ -15,28 +21,29 @@ export function Header() {
     >
       <Flex justify="space-between" align="center" maxW="960px" mx="auto">
         <HStack spacing={3} align="center">
-          {/* Crosshair icon */}
+          {/* Crosshair icon with pulse */}
           <Box
-            w="36px"
-            h="36px"
+            w="40px"
+            h="40px"
             borderRadius="lg"
             bg="rgba(220, 38, 38, 0.15)"
             border="1px solid"
-            borderColor="rgba(220, 38, 38, 0.3)"
+            borderColor="rgba(220, 38, 38, 0.35)"
             display="flex"
             alignItems="center"
             justifyContent="center"
             flexShrink={0}
+            animation={`${pulseGlow} 3s ease-in-out infinite`}
           >
-            <Text fontSize="lg" lineHeight="1">
+            <Text fontSize="xl" lineHeight="1">
               ⊕
             </Text>
           </Box>
           <Box>
             <Text
-              fontSize="lg"
+              fontSize="xl"
               fontWeight="900"
-              letterSpacing="0.15em"
+              letterSpacing="0.18em"
               textTransform="uppercase"
               bgGradient="linear(to-r, red.400, red.300, orange.300)"
               bgClip="text"
@@ -45,11 +52,11 @@ export function Header() {
               Callout
             </Text>
             <Text
-              fontSize="10px"
-              color="whiteAlpha.400"
-              letterSpacing="0.2em"
+              fontSize="9px"
+              color="whiteAlpha.350"
+              letterSpacing="0.25em"
               textTransform="uppercase"
-              fontWeight="500"
+              fontWeight="600"
             >
               On-Chain Justice
             </Text>

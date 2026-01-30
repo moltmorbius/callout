@@ -11,9 +11,15 @@ import {
   HStack,
   Flex,
 } from '@chakra-ui/react'
+import { keyframes } from '@emotion/react'
 import { Header } from './components/Header'
 import { MessageComposer } from './components/MessageComposer'
 import { DecryptMessage } from './components/DecryptMessage'
+
+const subtlePulse = keyframes`
+  0%, 100% { opacity: 0.07; }
+  50% { opacity: 0.12; }
+`
 
 function App() {
   return (
@@ -24,10 +30,11 @@ function App() {
         top={0}
         left={0}
         right={0}
-        height="600px"
-        bgGradient="radial(ellipse at 50% -20%, rgba(220,38,38,0.07) 0%, transparent 70%)"
+        height="700px"
+        bgGradient="radial(ellipse at 50% -20%, rgba(220,38,38,0.08) 0%, transparent 70%)"
         pointerEvents="none"
         zIndex={0}
+        animation={`${subtlePulse} 8s ease-in-out infinite`}
       />
       {/* Secondary ambient glow */}
       <Box
@@ -44,16 +51,31 @@ function App() {
       <Box position="relative" zIndex={1}>
         <Header />
 
-        <Container maxW="680px" px={{ base: 4, md: 6 }} py={{ base: 6, md: 10 }}>
-          <VStack spacing={{ base: 6, md: 10 }} align="stretch">
+        <Container maxW="720px" px={{ base: 4, md: 6 }} py={{ base: 6, md: 10 }}>
+          <VStack spacing={{ base: 6, md: 8 }} align="stretch">
             {/* Hero */}
-            <Box textAlign="center" pt={{ base: 4, md: 8 }} pb={{ base: 2, md: 4 }}>
+            <Box textAlign="center" pt={{ base: 6, md: 10 }} pb={{ base: 2, md: 4 }}>
+              {/* Big CALLOUT wordmark */}
               <Text
-                fontSize={{ base: '2xl', md: '4xl' }}
+                fontSize={{ base: '4xl', md: '6xl' }}
                 fontWeight="900"
-                letterSpacing="-0.02em"
-                lineHeight="1.15"
+                letterSpacing={{ base: '0.12em', md: '0.18em' }}
+                textTransform="uppercase"
+                bgGradient="linear(to-r, red.500, red.400, orange.400, red.400)"
+                bgClip="text"
+                lineHeight="1"
                 mb={4}
+              >
+                Callout
+              </Text>
+
+              <Text
+                fontSize={{ base: 'lg', md: '2xl' }}
+                fontWeight="800"
+                letterSpacing="-0.01em"
+                lineHeight="1.3"
+                mb={4}
+                color="whiteAlpha.800"
               >
                 Put scammers on blast.{' '}
                 <Box
@@ -65,9 +87,9 @@ function App() {
                 </Box>
               </Text>
               <Text
-                color="whiteAlpha.400"
+                color="whiteAlpha.350"
                 fontSize={{ base: 'sm', md: 'md' }}
-                maxW="460px"
+                maxW="480px"
                 mx="auto"
                 lineHeight="1.7"
               >
@@ -157,8 +179,8 @@ function App() {
                 mb={3}
               >
                 <Box
-                  w="20px"
-                  h="20px"
+                  w="22px"
+                  h="22px"
                   borderRadius="md"
                   bg="rgba(220, 38, 38, 0.1)"
                   border="1px solid"

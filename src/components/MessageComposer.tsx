@@ -16,12 +16,13 @@ import {
   Tooltip,
   Code,
   Link,
-  Flex,
   Collapse,
+  SimpleGrid,
 } from '@chakra-ui/react'
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useAccount, useEstimateGas, useSendTransaction, useChainId } from 'wagmi'
 import { type Address, isAddress, parseEther } from 'viem'
+import { keyframes } from '@emotion/react'
 import {
   messageTemplates,
   applyTemplate,
@@ -30,6 +31,11 @@ import {
 import { encodeMessage } from '../utils/encoding'
 import { encryptMessage } from '../utils/encryption'
 import { getExplorerTxUrl } from '../config/web3'
+
+const targetGlow = keyframes`
+  0%, 100% { box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.3), 0 0 20px rgba(220, 38, 38, 0.06); }
+  50% { box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.5), 0 0 40px rgba(220, 38, 38, 0.12); }
+`
 
 // Shared card style
 const cardStyle = {
@@ -56,6 +62,40 @@ function SectionLabel({ icon, label, accent }: { icon: string; label: string; ac
       </Text>
     </HStack>
   )
+}
+
+// Tone card color config
+const toneColors: Record<string, {
+  bg: string; bgHover: string; border: string; glow: string;
+  text: string; badge: string; iconBg: string
+}> = {
+  green: {
+    bg: 'rgba(72, 187, 120, 0.06)',
+    bgHover: 'rgba(72, 187, 120, 0.1)',
+    border: 'rgba(72, 187, 120, 0.35)',
+    glow: '0 0 30px rgba(72, 187, 120, 0.12), 0 0 60px rgba(72, 187, 120, 0.05)',
+    text: 'green.300',
+    badge: 'green',
+    iconBg: 'rgba(72, 187, 120, 0.12)',
+  },
+  yellow: {
+    bg: 'rgba(236, 201, 75, 0.06)',
+    bgHover: 'rgba(236, 201, 75, 0.1)',
+    border: 'rgba(236, 201, 75, 0.35)',
+    glow: '0 0 30px rgba(236, 201, 75, 0.12), 0 0 60px rgba(236, 201, 75, 0.05)',
+    text: 'yellow.300',
+    badge: 'yellow',
+    iconBg: 'rgba(236, 201, 75, 0.12)',
+  },
+  red: {
+    bg: 'rgba(220, 38, 38, 0.06)',
+    bgHover: 'rgba(220, 38, 38, 0.1)',
+    border: 'rgba(220, 38, 38, 0.35)',
+    glow: '0 0 30px rgba(220, 38, 38, 0.15), 0 0 60px rgba(220, 38, 38, 0.06)',
+    text: 'red.300',
+    badge: 'red',
+    iconBg: 'rgba(220, 38, 38, 0.12)',
+  },
 }
 
 export function MessageComposer() {
@@ -145,7 +185,7 @@ export function MessageComposer() {
     }
   }, [isValidTarget, calldata, targetAddress, sendTransactionAsync, toast])
 
-  // Not connected state (bypassed for dev preview with ?demo)
+  // Not connected state
   const _isDemo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('demo')
   if (!isConnected && !_isDemo) {
     return (
@@ -188,27 +228,28 @@ export function MessageComposer() {
       {/* ── Target Address ── */}
       <Box
         {...cardStyle}
-        borderColor="rgba(220, 38, 38, 0.12)"
+        borderColor="rgba(220, 38, 38, 0.15)"
         position="relative"
         overflow="hidden"
+        animation={targetAddress && isValidTarget ? `${targetGlow} 2.5s ease-in-out infinite` : undefined}
         _before={{
           content: '""',
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
-          height: '1px',
-          bgGradient: 'linear(to-r, transparent, rgba(220,38,38,0.5), transparent)',
+          height: '2px',
+          bgGradient: 'linear(to-r, transparent, rgba(220,38,38,0.6), transparent)',
         }}
       >
-        <SectionLabel icon="⊕" label="Target Address" accent="red.400" />
+        <SectionLabel icon="🎯" label="Target Address" accent="red.400" />
         <InputGroup size="lg">
           <InputLeftElement
             pointerEvents="none"
             h="full"
             pl={1}
           >
-            <Text color="red.600" fontSize="xs" fontFamily="mono" fontWeight="600">
+            <Text color="red.500" fontSize="xs" fontFamily="mono" fontWeight="700">
               0x
             </Text>
           </InputLeftElement>
@@ -220,19 +261,20 @@ export function MessageComposer() {
             fontSize="sm"
             bg="rgba(6, 6, 15, 0.9)"
             pl="42px"
-            h="50px"
+            h="54px"
             borderColor={
               targetAddress
                 ? isValidTarget
-                  ? 'rgba(220, 38, 38, 0.35)'
+                  ? 'rgba(220, 38, 38, 0.4)'
                   : 'orange.500'
                 : 'whiteAlpha.100'
             }
             borderRadius="xl"
-            _hover={{ borderColor: 'rgba(220, 38, 38, 0.25)' }}
+            borderWidth="1.5px"
+            _hover={{ borderColor: 'rgba(220, 38, 38, 0.3)' }}
             _focus={{
               borderColor: 'red.500',
-              boxShadow: '0 0 0 1px rgba(220, 38, 38, 0.3), 0 0 30px rgba(220, 38, 38, 0.08)',
+              boxShadow: '0 0 0 1px rgba(220, 38, 38, 0.4), 0 0 30px rgba(220, 38, 38, 0.1)',
             }}
             _placeholder={{ color: 'whiteAlpha.200' }}
           />
@@ -243,9 +285,12 @@ export function MessageComposer() {
           </Text>
         )}
         {isValidTarget && (
-          <Text fontSize="xs" color="red.400" mt={2} fontWeight="600" opacity={0.8}>
-            ✓ Target locked
-          </Text>
+          <HStack mt={2} spacing={1.5}>
+            <Box w="6px" h="6px" borderRadius="full" bg="red.400" />
+            <Text fontSize="xs" color="red.400" fontWeight="700" letterSpacing="0.03em">
+              Target locked
+            </Text>
+          </HStack>
         )}
       </Box>
 
@@ -270,69 +315,35 @@ export function MessageComposer() {
         />
       </Box>
 
-      {/* ── Tone Selector ── */}
+      {/* ── Tone Selector — 3 Visual Cards ── */}
       <Box {...cardStyle}>
         <SectionLabel icon="✉" label="Choose Your Tone" />
 
-        <VStack spacing={2.5} align="stretch">
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3} mb={4}>
           {messageTemplates.map((tpl) => {
             const isSelected = selectedTone === tpl.tone
-            const colorMap: Record<string, { bg: string; border: string; glow: string; text: string; badge: string }> = {
-              green: {
-                bg: 'rgba(72, 187, 120, 0.07)',
-                border: 'rgba(72, 187, 120, 0.3)',
-                glow: '0 0 30px rgba(72, 187, 120, 0.1)',
-                text: 'green.300',
-                badge: 'green',
-              },
-              yellow: {
-                bg: 'rgba(236, 201, 75, 0.07)',
-                border: 'rgba(236, 201, 75, 0.3)',
-                glow: '0 0 30px rgba(236, 201, 75, 0.1)',
-                text: 'yellow.300',
-                badge: 'yellow',
-              },
-              red: {
-                bg: 'rgba(220, 38, 38, 0.07)',
-                border: 'rgba(220, 38, 38, 0.3)',
-                glow: '0 0 30px rgba(220, 38, 38, 0.12)',
-                text: 'red.300',
-                badge: 'red',
-              },
-            }
-            const colors = colorMap[tpl.color] || colorMap.red
+            const colors = toneColors[tpl.color] || toneColors.red
 
             return (
               <Box
                 key={tpl.tone}
                 position="relative"
-                pl={{ base: 5, md: 6 }}
-                pr={{ base: 3.5, md: 4 }}
-                py={{ base: 3.5, md: 4 }}
+                p={4}
                 borderRadius="xl"
                 bg={isSelected ? colors.bg : 'rgba(6, 6, 15, 0.5)'}
-                border="1px solid"
+                border="2px solid"
                 borderColor={isSelected ? colors.border : 'whiteAlpha.50'}
                 cursor="pointer"
-                transition="all 0.2s ease"
+                transition="all 0.25s ease"
                 boxShadow={isSelected ? colors.glow : 'none'}
-                overflow="hidden"
+                textAlign="center"
                 _hover={{
                   borderColor: colors.border,
-                  bg: colors.bg,
+                  bg: colors.bgHover,
+                  transform: 'translateY(-2px)',
+                  boxShadow: colors.glow,
                 }}
-                _before={{
-                  content: '""',
-                  position: 'absolute',
-                  left: 0,
-                  top: '12px',
-                  bottom: '12px',
-                  width: '3px',
-                  borderRadius: '0 3px 3px 0',
-                  bg: colors.border,
-                  opacity: isSelected ? 1 : 0.4,
-                  transition: 'opacity 0.2s',
-                }}
+                _active={{ transform: 'translateY(0)' }}
                 onClick={() => {
                   setSelectedTone(tpl.tone)
                   setCustomMessage('')
@@ -340,121 +351,143 @@ export function MessageComposer() {
                 role="button"
                 tabIndex={0}
               >
-                <Flex
-                  justify="space-between"
-                  align="center"
+                {/* Big emoji icon */}
+                <Box
+                  w="48px"
+                  h="48px"
+                  borderRadius="xl"
+                  bg={colors.iconBg}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  mx="auto"
+                  mb={3}
+                  border="1px solid"
+                  borderColor={isSelected ? colors.border : 'transparent'}
+                  transition="all 0.2s"
+                >
+                  <Text fontSize="xl">{tpl.emoji}</Text>
+                </Box>
+
+                {/* Tone name */}
+                <Badge
+                  colorScheme={colors.badge}
+                  variant="solid"
+                  fontSize="10px"
+                  fontWeight="800"
+                  letterSpacing="0.08em"
+                  borderRadius="md"
+                  px={3}
+                  py={0.5}
                   mb={2}
-                  flexWrap={{ base: 'wrap', md: 'nowrap' }}
-                  gap={2}
                 >
-                  <HStack spacing={2}>
-                    <Text fontSize="lg">{tpl.emoji}</Text>
-                    <Badge
-                      colorScheme={colors.badge}
-                      variant="solid"
-                      fontSize="10px"
-                      fontWeight="800"
-                      letterSpacing="0.05em"
-                      borderRadius="md"
-                      px={2.5}
-                      py={0.5}
-                    >
-                      {tpl.label}
-                    </Badge>
-                  </HStack>
-                  <Text
-                    fontSize="xs"
-                    color={isSelected ? 'whiteAlpha.500' : 'whiteAlpha.300'}
-                    fontWeight="500"
-                  >
-                    {tpl.description}
-                  </Text>
-                </Flex>
+                  {tpl.label}
+                </Badge>
+
+                {/* Short description */}
                 <Text
-                  fontSize="sm"
-                  color={isSelected ? 'whiteAlpha.600' : 'whiteAlpha.300'}
-                  fontStyle="italic"
-                  lineHeight="1.6"
-                  pl={{ base: 0, md: 8 }}
+                  fontSize="11px"
+                  color={isSelected ? 'whiteAlpha.500' : 'whiteAlpha.300'}
+                  lineHeight="1.4"
+                  mt={1}
                 >
-                  &ldquo;{applyTemplate(tpl.template, returnAddress || walletAddress || '[address]')}&rdquo;
+                  {tpl.description}
                 </Text>
+
+                {/* Selected indicator */}
+                {isSelected && (
+                  <Box
+                    position="absolute"
+                    top={2}
+                    right={2}
+                    w="8px"
+                    h="8px"
+                    borderRadius="full"
+                    bg={colors.border}
+                    boxShadow={`0 0 8px ${colors.border}`}
+                  />
+                )}
               </Box>
             )
           })}
+        </SimpleGrid>
 
-          {/* Custom message option */}
-          <Box
-            position="relative"
-            pl={{ base: 5, md: 6 }}
-            pr={{ base: 3.5, md: 4 }}
-            py={{ base: 3.5, md: 4 }}
-            borderRadius="xl"
-            bg={selectedTone === 'custom' ? 'rgba(159, 122, 234, 0.07)' : 'rgba(6, 6, 15, 0.5)'}
-            border="1px solid"
-            borderColor={selectedTone === 'custom' ? 'rgba(159, 122, 234, 0.3)' : 'whiteAlpha.50'}
-            cursor="pointer"
-            transition="all 0.2s ease"
-            boxShadow={selectedTone === 'custom' ? '0 0 30px rgba(159, 122, 234, 0.1)' : 'none'}
-            overflow="hidden"
-            _hover={{
-              borderColor: 'rgba(159, 122, 234, 0.3)',
-              bg: 'rgba(159, 122, 234, 0.07)',
-            }}
-            _before={{
-              content: '""',
-              position: 'absolute',
-              left: 0,
-              top: '12px',
-              bottom: '12px',
-              width: '3px',
-              borderRadius: '0 3px 3px 0',
-              bg: 'rgba(159, 122, 234, 0.5)',
-              opacity: selectedTone === 'custom' ? 1 : 0.4,
-              transition: 'opacity 0.2s',
-            }}
-            onClick={() => setSelectedTone('custom')}
-            role="button"
-            tabIndex={0}
-          >
-            <HStack spacing={2} mb={selectedTone === 'custom' ? 3 : 0}>
-              <Text fontSize="lg">✍️</Text>
-              <Badge
-                colorScheme="purple"
-                variant="solid"
-                fontSize="10px"
-                fontWeight="800"
-                letterSpacing="0.05em"
-                borderRadius="md"
-                px={2.5}
-                py={0.5}
-              >
-                Custom
-              </Badge>
-              <Text fontSize="xs" color="whiteAlpha.300" fontWeight="500">
-                Write your own message
+        {/* Message preview for selected tone */}
+        <Collapse in={selectedTone !== null && selectedTone !== 'custom'} animateOpacity>
+          {selectedTone && selectedTone !== 'custom' && (
+            <Box
+              bg="rgba(6, 6, 15, 0.7)"
+              p={4}
+              borderRadius="xl"
+              border="1px solid"
+              borderColor="whiteAlpha.50"
+              mb={3}
+            >
+              <Text fontSize="10px" color="whiteAlpha.300" fontWeight="700" letterSpacing="0.08em" textTransform="uppercase" mb={2}>
+                Preview
               </Text>
-            </HStack>
-            <Collapse in={selectedTone === 'custom'} animateOpacity>
-              <Textarea
-                placeholder="Type your message..."
-                value={customMessage}
-                onChange={(e) => setCustomMessage(e.target.value)}
-                bg="rgba(6, 6, 15, 0.9)"
-                borderColor="whiteAlpha.100"
-                borderRadius="xl"
-                fontSize="sm"
-                rows={4}
-                onClick={(e) => e.stopPropagation()}
-                _focus={{
-                  borderColor: 'purple.400',
-                  boxShadow: '0 0 0 1px rgba(159, 122, 234, 0.3)',
-                }}
-                _placeholder={{ color: 'whiteAlpha.200' }}
-              />
-            </Collapse>
-          </Box>
-        </VStack>
+              <Text fontSize="sm" color="whiteAlpha.500" fontStyle="italic" lineHeight="1.7">
+                &ldquo;{finalMessage}&rdquo;
+              </Text>
+            </Box>
+          )}
+        </Collapse>
+
+        {/* Custom message option */}
+        <Box
+          p={4}
+          borderRadius="xl"
+          bg={selectedTone === 'custom' ? 'rgba(159, 122, 234, 0.07)' : 'rgba(6, 6, 15, 0.5)'}
+          border={selectedTone === 'custom' ? '2px solid' : '1px dashed'}
+          borderColor={selectedTone === 'custom' ? 'rgba(159, 122, 234, 0.35)' : 'whiteAlpha.100'}
+          cursor="pointer"
+          transition="all 0.2s ease"
+          boxShadow={selectedTone === 'custom' ? '0 0 30px rgba(159, 122, 234, 0.1)' : 'none'}
+          _hover={{
+            borderColor: 'rgba(159, 122, 234, 0.3)',
+            bg: 'rgba(159, 122, 234, 0.07)',
+          }}
+          onClick={() => setSelectedTone('custom')}
+          role="button"
+          tabIndex={0}
+        >
+          <HStack spacing={2} mb={selectedTone === 'custom' ? 3 : 0} justify="center">
+            <Text fontSize="lg">✍️</Text>
+            <Badge
+              colorScheme="purple"
+              variant="solid"
+              fontSize="10px"
+              fontWeight="800"
+              letterSpacing="0.05em"
+              borderRadius="md"
+              px={2.5}
+              py={0.5}
+            >
+              Custom
+            </Badge>
+            <Text fontSize="xs" color="whiteAlpha.300" fontWeight="500">
+              Write your own message
+            </Text>
+          </HStack>
+          <Collapse in={selectedTone === 'custom'} animateOpacity>
+            <Textarea
+              placeholder="Type your message..."
+              value={customMessage}
+              onChange={(e) => setCustomMessage(e.target.value)}
+              bg="rgba(6, 6, 15, 0.9)"
+              borderColor="whiteAlpha.100"
+              borderRadius="xl"
+              fontSize="sm"
+              rows={4}
+              onClick={(e) => e.stopPropagation()}
+              _focus={{
+                borderColor: 'purple.400',
+                boxShadow: '0 0 0 1px rgba(159, 122, 234, 0.3)',
+              }}
+              _placeholder={{ color: 'whiteAlpha.200' }}
+            />
+          </Collapse>
+        </Box>
       </Box>
 
       {/* ── Encryption ── */}
@@ -516,7 +549,7 @@ export function MessageComposer() {
       <Collapse in={!!finalMessage} animateOpacity>
         <Box
           {...cardStyle}
-          borderColor="rgba(220, 38, 38, 0.1)"
+          borderColor="rgba(220, 38, 38, 0.15)"
           position="relative"
           overflow="hidden"
           _before={{
@@ -525,8 +558,8 @@ export function MessageComposer() {
             top: 0,
             left: 0,
             right: 0,
-            height: '1px',
-            bgGradient: 'linear(to-r, transparent, rgba(220,38,38,0.3), transparent)',
+            height: '2px',
+            bgGradient: 'linear(to-r, transparent, rgba(220,38,38,0.5), transparent)',
           }}
         >
           <SectionLabel icon="📤" label="Message Preview" />
@@ -596,14 +629,14 @@ export function MessageComposer() {
             </HStack>
           )}
 
-          {/* Send button */}
+          {/* Send button — Big, red, consequential */}
           <Button
             size="lg"
             width="full"
-            h="56px"
-            fontSize="sm"
-            fontWeight="800"
-            letterSpacing="0.08em"
+            h="60px"
+            fontSize="md"
+            fontWeight="900"
+            letterSpacing="0.1em"
             textTransform="uppercase"
             isLoading={isSending}
             loadingText="Broadcasting..."
@@ -611,13 +644,13 @@ export function MessageComposer() {
             onClick={handleSend}
             bg={(!isValidTarget || !calldata) ? 'rgba(220, 38, 38, 0.15)' : 'rgba(220, 38, 38, 0.9)'}
             color={(!isValidTarget || !calldata) ? 'rgba(220, 38, 38, 0.4)' : 'white'}
-            border="1px solid"
-            borderColor={(!isValidTarget || !calldata) ? 'rgba(220, 38, 38, 0.1)' : 'rgba(220, 38, 38, 0.4)'}
+            border="2px solid"
+            borderColor={(!isValidTarget || !calldata) ? 'rgba(220, 38, 38, 0.1)' : 'rgba(220, 38, 38, 0.5)'}
             borderRadius="xl"
             _hover={{
               bg: 'red.600',
-              transform: 'translateY(-1px)',
-              boxShadow: '0 6px 40px rgba(220, 38, 38, 0.35)',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 8px 50px rgba(220, 38, 38, 0.4), 0 0 80px rgba(220, 38, 38, 0.15)',
             }}
             _active={{
               transform: 'translateY(0)',
@@ -633,13 +666,13 @@ export function MessageComposer() {
               },
             }}
             transition="all 0.2s"
-            boxShadow={(!isValidTarget || !calldata) ? 'none' : '0 2px 25px rgba(220, 38, 38, 0.25)'}
+            boxShadow={(!isValidTarget || !calldata) ? 'none' : '0 4px 30px rgba(220, 38, 38, 0.3)'}
           >
-            ⊕ Send On-Chain Message
+            ⚠️ Send On-Chain — Permanent
           </Button>
 
-          <Text fontSize="10px" color="whiteAlpha.150" textAlign="center" mt={3} lineHeight="1.5">
-            This action is permanent and irreversible. Your message will be inscribed on the blockchain forever.
+          <Text fontSize="10px" color="whiteAlpha.200" textAlign="center" mt={3} lineHeight="1.5">
+            This is irreversible. Your message will be inscribed on the blockchain forever.
           </Text>
 
           {/* Transaction result */}
