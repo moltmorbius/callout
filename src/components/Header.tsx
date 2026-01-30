@@ -1,4 +1,4 @@
-import { Box, Flex, Heading, Text, HStack } from '@chakra-ui/react'
+import { Box, Flex, Text, HStack } from '@chakra-ui/react'
 
 export function Header() {
   return (
@@ -7,45 +7,51 @@ export function Header() {
       top={0}
       zIndex={100}
       borderBottom="1px solid"
-      borderColor="rgba(255,255,255,0.06)"
+      borderColor="whiteAlpha.50"
       bg="rgba(6, 6, 15, 0.85)"
-      backdropFilter="blur(16px)"
-      px={6}
+      backdropFilter="blur(20px)"
+      px={{ base: 4, md: 6 }}
       py={3}
     >
-      <Flex justify="space-between" align="center" maxW="720px" mx="auto">
-        <HStack spacing={3}>
+      <Flex justify="space-between" align="center" maxW="960px" mx="auto">
+        <HStack spacing={3} align="center">
+          {/* Crosshair icon */}
           <Box
             w="36px"
             h="36px"
-            borderRadius="10px"
-            bg="rgba(220, 38, 38, 0.12)"
-            border="1px solid rgba(220, 38, 38, 0.25)"
+            borderRadius="lg"
+            bg="rgba(220, 38, 38, 0.15)"
+            border="1px solid"
+            borderColor="rgba(220, 38, 38, 0.3)"
             display="flex"
             alignItems="center"
             justifyContent="center"
-            fontSize="lg"
-            boxShadow="0 0 20px rgba(220, 38, 38, 0.15)"
+            flexShrink={0}
           >
-            📡
+            <Text fontSize="lg" lineHeight="1">
+              ⊕
+            </Text>
           </Box>
           <Box>
-            <Heading
-              size="sm"
-              letterSpacing="-0.02em"
-              fontWeight={700}
-              color="gray.50"
+            <Text
+              fontSize="lg"
+              fontWeight="900"
+              letterSpacing="0.15em"
+              textTransform="uppercase"
+              bgGradient="linear(to-r, red.400, red.300, orange.300)"
+              bgClip="text"
+              lineHeight="1.2"
             >
               Callout
-            </Heading>
+            </Text>
             <Text
               fontSize="10px"
-              color="gray.500"
-              letterSpacing="0.06em"
+              color="whiteAlpha.400"
+              letterSpacing="0.2em"
               textTransform="uppercase"
-              fontWeight={500}
+              fontWeight="500"
             >
-              On-chain justice
+              On-Chain Justice
             </Text>
           </Box>
         </HStack>
