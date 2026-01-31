@@ -1,20 +1,13 @@
-import { Box, Flex, Text, HStack, Button } from '@chakra-ui/react'
+import { Box, Flex, Text, HStack } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
-import { useAppKit, useAppKitAccount } from '@reown/appkit/react'
+import { HeaderWalletButton } from './WalletButton'
 
 const pulseGlow = keyframes`
   0%, 100% { box-shadow: 0 0 8px rgba(220, 38, 38, 0.3); }
   50% { box-shadow: 0 0 16px rgba(220, 38, 38, 0.5), 0 0 30px rgba(220, 38, 38, 0.15); }
 `
 
-function truncateAddress(addr: string): string {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
-}
-
 export function Header() {
-  const { open } = useAppKit()
-  const { address, isConnected } = useAppKitAccount()
-
   return (
     <Box
       position="sticky"
@@ -71,27 +64,7 @@ export function Header() {
           </Box>
         </HStack>
         <Box flexShrink={0}>
-          <Button
-            size="sm"
-            px={4}
-            fontWeight="700"
-            fontSize="xs"
-            letterSpacing="0.04em"
-            fontFamily={isConnected ? 'mono' : 'body'}
-            bg={isConnected ? 'rgba(220, 38, 38, 0.12)' : 'rgba(220, 38, 38, 0.85)'}
-            color={isConnected ? 'red.300' : 'white'}
-            border="1px solid"
-            borderColor={isConnected ? 'rgba(220, 38, 38, 0.3)' : 'rgba(220, 38, 38, 0.6)'}
-            borderRadius="lg"
-            _hover={{
-              bg: isConnected ? 'rgba(220, 38, 38, 0.2)' : 'red.600',
-              borderColor: 'rgba(220, 38, 38, 0.5)',
-            }}
-            _active={{ bg: isConnected ? 'rgba(220, 38, 38, 0.25)' : 'red.700' }}
-            onClick={() => open()}
-          >
-            {isConnected && address ? truncateAddress(address) : 'Connect Wallet'}
-          </Button>
+          <HeaderWalletButton />
         </Box>
       </Flex>
     </Box>
