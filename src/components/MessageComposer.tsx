@@ -104,9 +104,16 @@ export function MessageComposer() {
       return
     }
     if (encryptEnabled && encryptPassphrase) {
-      encryptMessage(finalMessage, encryptPassphrase).then((encrypted) => {
-        setCalldata(encodeMessage(encrypted))
-      })
+      let cancelled = false
+      encryptMessage(finalMessage, encryptPassphrase)
+        .then((encrypted) => {
+          if (!cancelled) setCalldata(encodeMessage(encrypted))
+        })
+        .catch(() => {
+          // Encryption failed — clear calldata so stale data isn't sent
+          if (!cancelled) setCalldata(undefined)
+        })
+      return () => { cancelled = true }
     } else {
       setCalldata(encodeMessage(finalMessage))
     }

@@ -22,6 +22,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: { componentStack?: string | null }) {
+    // Always log boundary errors — even in production — so crashes are visible
+    console.error('[Callout] React error boundary caught:', error, info)
     logError('React error boundary caught:', error, info)
   }
 
