@@ -6,8 +6,6 @@ import {
   extractVariableKeys,
   getTemplatesByCategory,
   getTemplateById,
-  type MessageTemplate,
-  type TemplateCategoryId,
 } from './templates'
 
 describe('messageTemplates', () => {

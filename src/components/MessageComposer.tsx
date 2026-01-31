@@ -20,7 +20,7 @@ import {
   SimpleGrid,
 } from '@chakra-ui/react'
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import { useAppKit } from '@reown/appkit/react'
+import { ComposerConnectButton } from './WalletButton'
 import { useAccount, useEstimateGas, useSendTransaction, useChainId } from 'wagmi'
 import { type Address, isAddress, parseEther } from 'viem'
 import { keyframes } from '@emotion/react'
@@ -100,7 +100,6 @@ const categoryColors: Record<string, {
 }
 
 export function MessageComposer() {
-  const { open } = useAppKit()
   const { isConnected, address: walletAddress } = useAccount()
   const chainId = useChainId()
   const toast = useToast()
@@ -293,28 +292,7 @@ export function MessageComposer() {
         <Text fontSize="sm" color="whiteAlpha.300" mb={6} maxW="280px" mx="auto" lineHeight="1.6">
           Connect your wallet to start sending on-chain messages
         </Text>
-        <Button
-          size="lg"
-          px={8}
-          fontWeight="800"
-          fontSize="sm"
-          letterSpacing="0.06em"
-          bg="rgba(220, 38, 38, 0.85)"
-          color="white"
-          border="1px solid"
-          borderColor="rgba(220, 38, 38, 0.6)"
-          borderRadius="xl"
-          _hover={{
-            bg: 'red.600',
-            transform: 'translateY(-1px)',
-            boxShadow: '0 4px 20px rgba(220, 38, 38, 0.3)',
-          }}
-          _active={{ bg: 'red.700', transform: 'translateY(0)' }}
-          transition="all 0.2s"
-          onClick={() => open()}
-        >
-          Connect Wallet
-        </Button>
+        <ComposerConnectButton />
       </Box>
     )
   }
