@@ -21,6 +21,9 @@ import { MessageComposer } from './components/MessageComposer'
 const DecryptMessage = lazy(() =>
   import('./components/DecryptMessage').then((m) => ({ default: m.DecryptMessage }))
 )
+const MessageFeed = lazy(() =>
+  import('./components/MessageFeed').then((m) => ({ default: m.MessageFeed }))
+)
 
 const subtlePulse = keyframes`
   0%, 100% { opacity: 0.07; }
@@ -159,6 +162,29 @@ function App() {
                     <Text>Decrypt</Text>
                   </HStack>
                 </Tab>
+                <Tab
+                  borderRadius="lg"
+                  fontWeight="700"
+                  fontSize="sm"
+                  letterSpacing="0.02em"
+                  color="whiteAlpha.400"
+                  py={2.5}
+                  transition="all 0.2s"
+                  _selected={{
+                    bg: 'rgba(72, 187, 120, 0.1)',
+                    color: 'green.300',
+                    border: '1px solid',
+                    borderColor: 'rgba(72, 187, 120, 0.25)',
+                  }}
+                  _hover={{
+                    color: 'whiteAlpha.700',
+                  }}
+                >
+                  <HStack spacing={2}>
+                    <Text fontSize="sm">📋</Text>
+                    <Text>Feed</Text>
+                  </HStack>
+                </Tab>
               </TabList>
               <TabPanels>
                 <TabPanel px={0} pt={6}>
@@ -173,6 +199,17 @@ function App() {
                     }
                   >
                     <DecryptMessage />
+                  </Suspense>
+                </TabPanel>
+                <TabPanel px={0} pt={6}>
+                  <Suspense
+                    fallback={
+                      <Center py={12}>
+                        <Spinner color="green.300" size="lg" />
+                      </Center>
+                    }
+                  >
+                    <MessageFeed />
                   </Suspense>
                 </TabPanel>
               </TabPanels>
