@@ -11,6 +11,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
       * { box-sizing: border-box; }
+      
+      /* Prevent layout shift from scrollbar appearing/disappearing */
+      html {
+        scrollbar-gutter: stable;
+        overflow-y: scroll;
+        /* Firefox scrollbar */
+        scrollbar-width: thin;
+        scrollbar-color: #1e1e42 #06060f;
+      }
+      
       body {
         margin: 0;
         background: #06060f;
@@ -18,11 +28,25 @@
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       }
       
-      /* Scrollbar styling */
-      ::-webkit-scrollbar { width: 6px; }
-      ::-webkit-scrollbar-track { background: #0a0a1a; }
-      ::-webkit-scrollbar-thumb { background: #1a1a3e; border-radius: 3px; }
-      ::-webkit-scrollbar-thumb:hover { background: #2a2a5e; }
+      /* Custom scrollbar — Chrome/Safari/Edge */
+      ::-webkit-scrollbar {
+        width: 8px;
+        background: #06060f;
+      }
+      ::-webkit-scrollbar-track {
+        background: #06060f;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #1e1e42;
+        border-radius: 4px;
+        border: 2px solid #06060f;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #2d2d5e;
+      }
+      ::-webkit-scrollbar-thumb:active {
+        background: #3a2a4e;
+      }
       
       /* Pulse animation for send button */
       @keyframes pulse-glow {
