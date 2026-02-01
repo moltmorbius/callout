@@ -5,6 +5,9 @@
  * TextEncoder/TextDecoder and crypto.subtle (Web Crypto API).
  */
 
+// Extend Vitest matchers with jest-dom (toBeInTheDocument, etc.)
+import '@testing-library/jest-dom/vitest'
+
 // Ensure crypto.subtle is available for encryption tests.
 // happy-dom ships with a globalThis.crypto that includes subtle.
 if (typeof globalThis.crypto === 'undefined') {
