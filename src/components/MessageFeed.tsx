@@ -6,9 +6,21 @@ import {
   Badge,
   Link,
   Tooltip,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  Button,
+  Spinner,
+  Center,
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
-import { mockCallouts } from '../data/mockCallouts'
+import { useState, useCallback } from 'react'
+import { isAddress } from 'viem'
+import {
+  fetchAddressTransactions,
+  transactionsToCallouts,
+  type BlockScoutNextPage,
+} from '../services/explorer'
 import { CHAIN_INFO, getCalloutTxUrl, getCalloutAddressUrl } from '../types/callout'
 import type { Callout } from '../types/callout'
 import { cardStyle } from '../shared/styles'
@@ -19,6 +31,11 @@ import { SectionLabel } from '../shared/SectionLabel'
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+`
+
+const pulseGlow = keyframes`
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 `
 
 /* ── Helpers ──────────────────────────────────────────────────── */
@@ -243,48 +260,276 @@ function CalloutCard({ callout, index }: CalloutCardProps) {
 /* ── MessageFeed ─────────────────────────────────────────────── */
 
 export function MessageFeed() {
-  // Sort by newest first
-  const sortedCallouts = [...mockCallouts].sort((a, b) => b.timestamp - a.timestamp)
+  const [addressInput, setAddressInput] = useState('')
+  const [searchedAddress, setSearchedAddress] = useState<string | null>(null)
+  const [callouts, setCallouts] = useState<Callout[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [nextPage, setNextPage] = useState<BlockScoutNextPage | null>(null)
+  const [totalScanned, setTotalScanned] = useState(0)
+
+  const handleSearch = useCallback(async () => {
+    const addr = addressInput.trim()
+    if (!isAddress(addr)) {
+      setError('Invalid address. Enter a valid EVM address (0x…).')
+      return
+    }
+
+    setError(null)
+    setCallouts([])
+    setNextPage(null)
+    setTotalScanned(0)
+    setSearchedAddress(addr)
+    setIsLoading(true)
+
+    try {
+      const data = await fetchAddressTransactions(addr)
+      const decoded = transactionsToCallouts(data.items)
+      setCallouts(decoded)
+      setNextPage(data.next_page_params)
+      setTotalScanned(data.items.length)
+    } catch (err) {
+      setError(
+        `Failed to fetch transactions. ${err instanceof Error ? err.message : 'Try again later.'}`,
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }, [addressInput])
+
+  const handleLoadMore = useCallback(async () => {
+    if (!searchedAddress || !nextPage) return
+    setIsLoadingMore(true)
+
+    try {
+      const data = await fetchAddressTransactions(searchedAddress, nextPage)
+      const decoded = transactionsToCallouts(data.items)
+      setCallouts((prev) => [...prev, ...decoded])
+      setNextPage(data.next_page_params)
+      setTotalScanned((prev) => prev + data.items.length)
+    } catch (err) {
+      setError(
+        `Failed to load more. ${err instanceof Error ? err.message : 'Try again.'}`,
+      )
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }, [searchedAddress, nextPage])
 
   return (
     <VStack spacing={4} align="stretch" data-testid="message-feed">
-      {/* Feed header */}
+      {/* Search header */}
       <Box {...cardStyle} py={4}>
-        <HStack justify="space-between" align="center">
-          <SectionLabel icon="📋" label="Recent Callouts" accent="red.400" />
-          <Badge
-            variant="outline"
-            colorScheme="red"
-            fontSize="10px"
-            fontWeight="700"
-            borderRadius="full"
-            px={2.5}
-          >
-            {sortedCallouts.length} posted
-          </Badge>
-        </HStack>
-        <Text fontSize="xs" color="whiteAlpha.300" lineHeight="1.6" mt={1}>
-          Browse on-chain callouts posted by the community. All messages are permanently inscribed as transaction calldata.
+        <SectionLabel icon="📋" label="Callout Feed" accent="red.400" />
+        <Text fontSize="xs" color="whiteAlpha.300" lineHeight="1.6" mt={1} mb={4}>
+          Enter an address to see on-chain callout messages sent to it. Scans PulseChain transactions and decodes calldata as text.
         </Text>
+
+        {/* Address input */}
+        <HStack spacing={2}>
+          <InputGroup flex={1}>
+            <InputLeftElement h="44px" pointerEvents="none">
+              <Text fontSize="sm" color="whiteAlpha.300">🎯</Text>
+            </InputLeftElement>
+            <Input
+              placeholder="0x… target address"
+              value={addressInput}
+              onChange={(e) => setAddressInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSearch()
+              }}
+              aria-label="Target address to search"
+              fontFamily="mono"
+              fontSize="sm"
+              h="44px"
+              bg="rgba(6, 6, 15, 0.8)"
+              borderColor="whiteAlpha.100"
+              color="whiteAlpha.700"
+              _placeholder={{ color: 'whiteAlpha.200' }}
+              _focus={{
+                borderColor: 'red.400',
+                boxShadow: '0 0 0 1px rgba(220, 38, 38, 0.3)',
+              }}
+            />
+          </InputGroup>
+          <Button
+            h="44px"
+            px={6}
+            fontSize="sm"
+            fontWeight="800"
+            letterSpacing="0.04em"
+            textTransform="uppercase"
+            bg="rgba(220, 38, 38, 0.15)"
+            color="red.300"
+            border="1px solid"
+            borderColor="rgba(220, 38, 38, 0.25)"
+            borderRadius="lg"
+            onClick={handleSearch}
+            isLoading={isLoading}
+            loadingText="Scanning..."
+            isDisabled={!addressInput.trim()}
+            aria-label="Search for callouts to this address"
+            _hover={{
+              bg: 'rgba(220, 38, 38, 0.25)',
+              transform: 'translateY(-1px)',
+              boxShadow: '0 4px 16px rgba(220, 38, 38, 0.12)',
+            }}
+            _active={{ transform: 'translateY(0)' }}
+            _disabled={{
+              opacity: 0.4,
+              cursor: 'not-allowed',
+              _hover: { bg: 'rgba(220, 38, 38, 0.15)', transform: 'none', boxShadow: 'none' },
+            }}
+            transition="all 0.2s"
+          >
+            🔍 Scan
+          </Button>
+        </HStack>
       </Box>
 
-      {/* Callout cards */}
-      {sortedCallouts.length === 0 ? (
+      {/* Error */}
+      {error && (
+        <Box
+          p={4}
+          borderRadius="xl"
+          bg="rgba(236, 201, 75, 0.06)"
+          border="1px solid"
+          borderColor="rgba(236, 201, 75, 0.2)"
+        >
+          <HStack>
+            <Text fontSize="sm" color="yellow.300">⚠</Text>
+            <Text fontSize="sm" color="yellow.200">{error}</Text>
+          </HStack>
+        </Box>
+      )}
+
+      {/* Loading spinner */}
+      {isLoading && (
+        <Center py={12}>
+          <VStack spacing={3}>
+            <Spinner color="red.400" size="lg" thickness="3px" />
+            <Text fontSize="sm" color="whiteAlpha.400" fontWeight="600">
+              Scanning PulseChain transactions…
+            </Text>
+          </VStack>
+        </Center>
+      )}
+
+      {/* Results summary */}
+      {!isLoading && searchedAddress && (
+        <HStack justify="space-between" px={1}>
+          <HStack spacing={2}>
+            <Text fontSize="xs" color="whiteAlpha.300">
+              Showing callouts to
+            </Text>
+            <Text fontSize="xs" fontFamily="mono" color="red.300" fontWeight="600">
+              {truncateAddress(searchedAddress)}
+            </Text>
+          </HStack>
+          <HStack spacing={3}>
+            <Badge
+              variant="outline"
+              colorScheme="red"
+              fontSize="10px"
+              fontWeight="700"
+              borderRadius="full"
+              px={2.5}
+            >
+              {callouts.length} found
+            </Badge>
+            <Text fontSize="10px" color="whiteAlpha.200">
+              {totalScanned} txs scanned
+            </Text>
+          </HStack>
+        </HStack>
+      )}
+
+      {/* Empty state */}
+      {!isLoading && searchedAddress && callouts.length === 0 && (
         <Box {...cardStyle} textAlign="center" py={12}>
           <Text fontSize="3xl" mb={3}>
             🔇
           </Text>
           <Text fontSize="md" fontWeight="600" color="whiteAlpha.400" mb={1}>
-            No callouts yet
+            No callouts found
           </Text>
           <Text fontSize="sm" color="whiteAlpha.250">
-            Be the first to put a scammer on blast.
+            {totalScanned > 0
+              ? `Scanned ${totalScanned} transactions — none contained readable text calldata.`
+              : 'No transactions found for this address.'}
+          </Text>
+          {nextPage && (
+            <Button
+              mt={4}
+              size="sm"
+              variant="ghost"
+              color="whiteAlpha.400"
+              onClick={handleLoadMore}
+              isLoading={isLoadingMore}
+              _hover={{ color: 'red.300' }}
+            >
+              Scan more transactions →
+            </Button>
+          )}
+        </Box>
+      )}
+
+      {/* Initial empty state (no search yet) */}
+      {!isLoading && !searchedAddress && (
+        <Box {...cardStyle} textAlign="center" py={12}>
+          <Text fontSize="3xl" mb={3}>
+            📡
+          </Text>
+          <Text fontSize="md" fontWeight="600" color="whiteAlpha.400" mb={1}>
+            Search for callouts
+          </Text>
+          <Text fontSize="sm" color="whiteAlpha.250">
+            Enter an address above to find on-chain messages sent to it.
           </Text>
         </Box>
-      ) : (
-        sortedCallouts.map((callout, index) => (
-          <CalloutCard key={callout.id} callout={callout} index={index} />
-        ))
+      )}
+
+      {/* Callout cards */}
+      {callouts.map((callout, index) => (
+        <CalloutCard key={callout.id} callout={callout} index={index} />
+      ))}
+
+      {/* Load more button */}
+      {!isLoading && callouts.length > 0 && nextPage && (
+        <Button
+          size="lg"
+          width="full"
+          h="48px"
+          fontSize="sm"
+          fontWeight="700"
+          letterSpacing="0.03em"
+          bg="rgba(255, 255, 255, 0.03)"
+          color="whiteAlpha.400"
+          border="1px solid"
+          borderColor="whiteAlpha.50"
+          borderRadius="xl"
+          onClick={handleLoadMore}
+          isLoading={isLoadingMore}
+          loadingText="Loading more…"
+          _hover={{
+            bg: 'rgba(220, 38, 38, 0.08)',
+            color: 'red.300',
+            borderColor: 'rgba(220, 38, 38, 0.2)',
+          }}
+          transition="all 0.2s"
+        >
+          <HStack spacing={2}>
+            <Text>Load more callouts</Text>
+            <Box
+              w="6px"
+              h="6px"
+              borderRadius="full"
+              bg="red.400"
+              animation={`${pulseGlow} 2s ease-in-out infinite`}
+            />
+          </HStack>
+        </Button>
       )}
     </VStack>
   )

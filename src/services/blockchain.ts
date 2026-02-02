@@ -1,0 +1,115 @@
+/**
+ * Direct blockchain RPC calls via viem public clients.
+ *
+ * Used for fetching individual transactions by hash — goes straight
+ * to the chain RPC, no explorer API needed.
+ */
+
+import { createPublicClient, http, type Chain } from 'viem'
+import { mainnet, polygon, arbitrum, optimism, base, bsc } from 'viem/chains'
+
+/* ── PulseChain definition ───────────────────────────────── */
+
+const pulsechain: Chain = {
+  id: 369,
+  name: 'PulseChain',
+  nativeCurrency: { name: 'PLS', symbol: 'PLS', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://rpc.pulsechain.com'] },
+  },
+  blockExplorers: {
+    default: { name: 'PulseScan', url: 'https://scan.pulsechain.com' },
+  },
+}
+
+/* ── Chain registry ──────────────────────────────────────── */
+
+const chains: Record<number, Chain> = {
+  1: mainnet,
+  369: pulsechain,
+  137: polygon,
+  42161: arbitrum,
+  10: optimism,
+  8453: base,
+  56: bsc,
+}
+
+/** All supported chain IDs */
+export const SUPPORTED_CHAIN_IDS = Object.keys(chains).map(Number)
+
+/** Default chain for tx lookup when none specified */
+export const DEFAULT_CHAIN_ID = 369
+
+/* ── Client cache ────────────────────────────────────────── */
+
+const clientCache = new Map<number, ReturnType<typeof createPublicClient>>()
+
+function getClient(chainId: number) {
+  let client = clientCache.get(chainId)
+  if (!client) {
+    const chain = chains[chainId]
+    if (!chain) throw new Error(`Unsupported chain ID: ${chainId}`)
+    client = createPublicClient({ chain, transport: http() })
+    clientCache.set(chainId, client)
+  }
+  return client
+}
+
+/* ── Transaction lookup ──────────────────────────────────── */
+
+export interface TransactionResult {
+  readonly hash: string
+  readonly from: string
+  readonly to: string | null
+  readonly value: bigint
+  readonly input: string
+  readonly chainId: number
+  readonly blockNumber: bigint | null
+}
+
+/**
+ * Fetch a transaction by hash from the blockchain RPC.
+ *
+ * Tries the specified chain first. If not found and no chain was
+ * specified, falls back to trying all supported chains.
+ */
+export async function fetchTransaction(
+  hash: `0x${string}`,
+  chainId?: number,
+): Promise<TransactionResult> {
+  const chainsToTry = chainId
+    ? [chainId]
+    : [DEFAULT_CHAIN_ID, ...SUPPORTED_CHAIN_IDS.filter((id) => id !== DEFAULT_CHAIN_ID)]
+
+  let lastError: Error | null = null
+
+  for (const cid of chainsToTry) {
+    try {
+      const client = getClient(cid)
+      const tx = await client.getTransaction({ hash })
+      return {
+        hash: tx.hash,
+        from: tx.from,
+        to: tx.to,
+        value: tx.value,
+        input: tx.input,
+        chainId: cid,
+        blockNumber: tx.blockNumber,
+      }
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err))
+      // Transaction not found on this chain — try next
+      continue
+    }
+  }
+
+  throw lastError ?? new Error('Transaction not found on any supported chain')
+}
+
+/**
+ * Check if a string looks like a transaction hash.
+ * 66 chars: 0x + 64 hex chars.
+ */
+export function isTxHash(input: string): boolean {
+  return /^0x[0-9a-fA-F]{64}$/.test(input.trim())
+}
