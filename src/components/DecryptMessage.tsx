@@ -7,6 +7,7 @@ import {
   Textarea,
   Button,
   Code,
+  Badge,
   useToast,
   Collapse,
 } from '@chakra-ui/react'
@@ -14,6 +15,8 @@ import { keyframes } from '@emotion/react'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { decodeMessage, isLikelyText } from '../utils/encoding'
 import { decryptMessage, isEncryptedMessage } from '../utils/encryption'
+import { fetchTransaction, isTxHash } from '../services/blockchain'
+import { CHAIN_INFO } from '../types/callout'
 import { cardStyle } from '../shared/styles'
 
 /* ── keyframe animations ───────────────────────────────── */
@@ -88,10 +91,16 @@ function useScrambleText(target: string | null, active: boolean, durationMs = 90
 export function DecryptMessage() {
   const toast = useToast()
 
-  const [calldataInput, setCalldataInput] = useState('')
+  const [inputValue, setInputValue] = useState('')
   const [passphrase, setPassphrase] = useState('')
   const [decodedMessage, setDecodedMessage] = useState<string | null>(null)
   const [decryptedMessage, setDecryptedMessage] = useState<string | null>(null)
+  const [txMeta, setTxMeta] = useState<{
+    from: string
+    to: string | null
+    chainId: number
+    hash: string
+  } | null>(null)
   const [isDecrypting, setIsDecrypting] = useState(false)
   const [isDecoding, setIsDecoding] = useState(false)
   const [showResult, setShowResult] = useState(false)
@@ -100,51 +109,77 @@ export function DecryptMessage() {
   // Scramble effect while decoding
   const scrambled = useScrambleText(decodedMessage, isDecoding, 900)
 
-  const handleDecode = useCallback(() => {
+  // Detect input type
+  const inputTrimmed = inputValue.trim()
+  const inputIsTxHash = isTxHash(inputTrimmed)
+
+  const handleDecode = useCallback(async () => {
     setError(null)
     setDecodedMessage(null)
     setDecryptedMessage(null)
+    setTxMeta(null)
     setShowResult(false)
     setIsDecoding(true)
 
-    let hex = calldataInput.trim()
-    if (!hex.startsWith('0x')) {
-      hex = '0x' + hex
-    }
+    try {
+      let calldata: string
 
-    // Simulate a brief decode delay for the animation
-    setTimeout(() => {
-      try {
-        const decoded = decodeMessage(hex as `0x${string}`)
-        if (!isLikelyText(hex as `0x${string}`)) {
-          setError('The decoded data does not appear to be a text message.')
-          setDecodedMessage(decoded)
+      if (inputIsTxHash) {
+        // Fetch transaction from blockchain RPC
+        const tx = await fetchTransaction(inputTrimmed as `0x${string}`)
+        calldata = tx.input
+        setTxMeta({
+          from: tx.from,
+          to: tx.to,
+          chainId: tx.chainId,
+          hash: tx.hash,
+        })
+
+        if (!calldata || calldata === '0x') {
           setIsDecoding(false)
-          setShowResult(true)
+          setError('Transaction has no calldata (empty input). This tx doesn\'t contain a message.')
           return
         }
+      } else {
+        // Raw calldata input
+        calldata = inputTrimmed.startsWith('0x') ? inputTrimmed : `0x${inputTrimmed}`
+      }
+
+      const decoded = decodeMessage(calldata as `0x${string}`)
+      if (!isLikelyText(calldata as `0x${string}`)) {
+        setError('The decoded data does not appear to be a text message. It may be contract call data.')
         setDecodedMessage(decoded)
-
-        // Let scramble animation play, then reveal
-        setTimeout(() => {
-          setIsDecoding(false)
-          setShowResult(true)
-
-          if (isEncryptedMessage(decoded)) {
-            toast({
-              title: '🔒 Encrypted message detected',
-              description: 'Enter the passphrase to unlock.',
-              status: 'info',
-              duration: 4000,
-            })
-          }
-        }, 950)
-      } catch {
         setIsDecoding(false)
+        setShowResult(true)
+        return
+      }
+      setDecodedMessage(decoded)
+
+      // Let scramble animation play, then reveal
+      setTimeout(() => {
+        setIsDecoding(false)
+        setShowResult(true)
+
+        if (isEncryptedMessage(decoded)) {
+          toast({
+            title: '🔒 Encrypted message detected',
+            description: 'Enter the passphrase to unlock.',
+            status: 'info',
+            duration: 4000,
+          })
+        }
+      }, 950)
+    } catch (err) {
+      setIsDecoding(false)
+      if (inputIsTxHash) {
+        setError(
+          `Could not fetch transaction. ${err instanceof Error ? err.message : 'Check the hash and try again.'}`,
+        )
+      } else {
         setError('Failed to decode. Make sure the input is valid hex calldata.')
       }
-    }, 200)
-  }, [calldataInput, toast])
+    }
+  }, [inputTrimmed, inputIsTxHash, toast])
 
   const handleDecrypt = useCallback(async () => {
     if (!decodedMessage || !passphrase) return
@@ -165,6 +200,8 @@ export function DecryptMessage() {
       setIsDecrypting(false)
     }
   }, [decodedMessage, passphrase, toast])
+
+  const truncateAddr = (addr: string) => `${addr.slice(0, 6)}…${addr.slice(-4)}`
 
   return (
     <VStack spacing={4} align="stretch">
@@ -211,16 +248,41 @@ export function DecryptMessage() {
               Decode Calldata
             </Text>
             <Text fontSize="xs" color="whiteAlpha.300" mt={0.5}>
-              Paste a tx hash or raw hex input data
+              Paste a transaction hash or raw hex calldata
             </Text>
           </Box>
         </HStack>
 
+        {/* Input type indicator */}
+        {inputTrimmed && (
+          <HStack mb={2}>
+            <Badge
+              fontSize="9px"
+              fontWeight="700"
+              letterSpacing="0.05em"
+              borderRadius="md"
+              px={2}
+              py={0.5}
+              bg={inputIsTxHash ? 'rgba(159, 122, 234, 0.1)' : 'rgba(99, 179, 237, 0.1)'}
+              color={inputIsTxHash ? 'purple.300' : 'blue.300'}
+              border="1px solid"
+              borderColor={inputIsTxHash ? 'rgba(159, 122, 234, 0.2)' : 'rgba(99, 179, 237, 0.2)'}
+            >
+              {inputIsTxHash ? '🔗 Transaction Hash' : '📦 Raw Calldata'}
+            </Badge>
+            {inputIsTxHash && (
+              <Text fontSize="10px" color="whiteAlpha.300">
+                Will fetch from blockchain RPC
+              </Text>
+            )}
+          </HStack>
+        )}
+
         <Textarea
-          placeholder="0x48656c6c6f... or raw hex calldata"
-          value={calldataInput}
-          onChange={(e) => setCalldataInput(e.target.value)}
-          aria-label="Hex calldata input"
+          placeholder="0x5c504ed432cb51... (tx hash) or 0x48656c6c6f... (calldata)"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          aria-label="Transaction hash or hex calldata input"
           fontFamily="mono"
           fontSize="sm"
           bg="rgba(6, 6, 15, 0.8)"
@@ -243,9 +305,9 @@ export function DecryptMessage() {
           letterSpacing="0.05em"
           textTransform="uppercase"
           onClick={handleDecode}
-          isDisabled={!calldataInput.trim() || isDecoding}
+          isDisabled={!inputTrimmed || isDecoding}
           isLoading={isDecoding}
-          loadingText="Decoding..."
+          loadingText={inputIsTxHash ? 'Fetching tx...' : 'Decoding...'}
           aria-label="Decode hex calldata into readable message"
           bg="rgba(99, 179, 237, 0.15)"
           color="blue.300"
@@ -327,7 +389,7 @@ export function DecryptMessage() {
                 textTransform="uppercase"
                 color="blue.300"
               >
-                Decoding...
+                {inputIsTxHash ? 'Fetching & Decoding...' : 'Decoding...'}
               </Text>
             </HStack>
             <Box
@@ -393,6 +455,49 @@ export function DecryptMessage() {
                 Message Decoded
               </Text>
             </HStack>
+
+            {/* Transaction metadata (when fetched from chain) */}
+            {txMeta && (
+              <Box
+                mb={4}
+                p={3}
+                bg="rgba(159, 122, 234, 0.04)"
+                borderRadius="lg"
+                border="1px solid"
+                borderColor="rgba(159, 122, 234, 0.12)"
+              >
+                <HStack spacing={4} flexWrap="wrap" gap={2}>
+                  <HStack spacing={1.5}>
+                    <Text fontSize="10px" color="whiteAlpha.400" fontWeight="700" textTransform="uppercase">From</Text>
+                    <Text fontSize="xs" fontFamily="mono" color="purple.300" fontWeight="600">
+                      {truncateAddr(txMeta.from)}
+                    </Text>
+                  </HStack>
+                  {txMeta.to && (
+                    <HStack spacing={1.5}>
+                      <Text fontSize="10px" color="whiteAlpha.400" fontWeight="700" textTransform="uppercase">To</Text>
+                      <Text fontSize="xs" fontFamily="mono" color="purple.300" fontWeight="600">
+                        {truncateAddr(txMeta.to)}
+                      </Text>
+                    </HStack>
+                  )}
+                  <Badge
+                    fontSize="9px"
+                    fontWeight="700"
+                    borderRadius="md"
+                    px={2}
+                    py={0.5}
+                    bg="rgba(255, 255, 255, 0.04)"
+                    color="whiteAlpha.500"
+                    border="1px solid"
+                    borderColor="whiteAlpha.50"
+                  >
+                    {CHAIN_INFO[txMeta.chainId]?.emoji ?? ''} {CHAIN_INFO[txMeta.chainId]?.name ?? `Chain ${txMeta.chainId}`}
+                  </Badge>
+                </HStack>
+              </Box>
+            )}
+
             <Box
               bg="rgba(6, 6, 15, 0.9)"
               p={4}
