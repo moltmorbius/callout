@@ -4,6 +4,8 @@
 
 ![Screenshot](screenshot-landing.png)
 
+> **📚 [Full Documentation](./docs/)** — User guide, developer setup, templates, and architecture
+
 ## What It Does
 
 Callout encodes human-readable messages as UTF-8 hex in transaction input data (calldata), then sends a zero-value transaction to the target address. The message becomes permanently recorded on-chain.
@@ -15,6 +17,7 @@ Callout encodes human-readable messages as UTF-8 hex in transaction input data (
 
 ## Features
 
+### Send Callouts
 - 🔗 **Wallet Connection** via Reown (WalletConnect) — supports MetaMask, Rainbow, Coinbase, etc.
 - 📝 **Pre-written message templates** organized by tone:
   - 🤝 **Cordial** (green) — Professional, assumes good faith
@@ -24,9 +27,18 @@ Callout encodes human-readable messages as UTF-8 hex in transaction input data (
 - 😠 **Target Address** — Input with validation
 - ↩️ **Return Address** — Auto-injected into templates
 - 🔒 **Optional Encryption** — AES-256-GCM encryption with a shared passphrase
-- 🔓 **Decrypt Mode** — Decode and decrypt messages from transaction calldata
 - ⛽ **Gas Estimation** — See the cost before sending
-- 🔍 **Explorer Links** — Direct links to view your transaction
+
+### Decrypt Messages
+- 🔓 **Tx Hash Lookup** — Paste a transaction hash to fetch and decode calldata
+- 📦 **Raw Calldata** — Or paste raw hex calldata directly
+- 🔐 **Decrypt Encrypted Messages** — Enter passphrase to unlock
+
+### View the Feed
+- 📋 **Live Feed** — See callouts sent FROM an address (proves authorship)
+- 🔗 **Connected Wallet Shortcut** — One-click to view your own sent callouts
+- 📄 **Pagination** — Load 50 transactions per page
+- 🔍 **Explorer Links** — Direct links to view transactions on block explorer
 
 ## Supported Networks
 
@@ -65,6 +77,8 @@ Get a free project ID at [cloud.reown.com](https://cloud.reown.com).
 
 ## How It Works
 
+### Send a Callout
+
 1. Connect your wallet
 2. Enter the target address (scammer/recipient)
 3. Choose a message template or write a custom message
@@ -72,12 +86,19 @@ Get a free project ID at [cloud.reown.com](https://cloud.reown.com).
 5. Send — the message is encoded as hex calldata in a 0-value transaction
 6. The message is now permanently on-chain
 
-### Decrypting Messages
+### Decrypt a Message
 
-1. Switch to the "Decrypt Message" tab
-2. Paste the calldata (input data) from a transaction
-3. Click "Decode Message" to see the plaintext
+1. Switch to the **"Decrypt"** tab
+2. Paste a **transaction hash** (fetches from blockchain) OR **raw calldata hex**
+3. Click **"Crack It Open"** to decode as UTF-8
 4. If encrypted, enter the passphrase to decrypt
+
+### View the Feed
+
+1. Switch to the **"Feed"** tab
+2. Enter an address OR click **"Use My Wallet"** (if connected)
+3. Click **"Scan"** to fetch callouts sent FROM that address
+4. See all sent messages with previews, timestamps, and explorer links
 
 ## Domain
 
