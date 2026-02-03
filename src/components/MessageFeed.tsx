@@ -325,7 +325,7 @@ export function MessageFeed() {
       <Box {...cardStyle} py={4}>
         <SectionLabel icon="📋" label="Callout Feed" accent="red.400" />
         <Text fontSize="xs" color="whiteAlpha.300" lineHeight="1.6" mt={1} mb={4}>
-          Enter an address to see on-chain callout messages sent to it. Scans PulseChain transactions and decodes calldata as text.
+          See callout messages sent from an address. Connect your wallet to prove you're the sender.
         </Text>
 
         {/* Connected wallet shortcut — disappears once populated */}
@@ -349,7 +349,7 @@ export function MessageFeed() {
             }}
             transition="color 0.15s"
           >
-            Select Connected: {truncateAddress(connectedAddress)}
+            Use My Wallet: {truncateAddress(connectedAddress)}
           </Button>
         )}
 
@@ -357,16 +357,16 @@ export function MessageFeed() {
         <HStack spacing={2}>
           <InputGroup flex={1}>
             <InputLeftElement h="44px" pointerEvents="none">
-              <Text fontSize="sm" color="whiteAlpha.300">🎯</Text>
+              <Text fontSize="sm" color="whiteAlpha.300">📤</Text>
             </InputLeftElement>
             <Input
-              placeholder="0x… target address"
+              placeholder="0x… sender address"
               value={addressInput}
               onChange={(e) => setAddressInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleSearch()
               }}
-              aria-label="Target address to search"
+              aria-label="Sender address to search"
               fontFamily="mono"
               fontSize="sm"
               h="44px"
@@ -396,7 +396,7 @@ export function MessageFeed() {
             isLoading={isLoading}
             loadingText="Scanning..."
             isDisabled={!addressInput.trim()}
-            aria-label="Search for callouts to this address"
+            aria-label="Search for callouts from this address"
             _hover={{
               bg: 'rgba(220, 38, 38, 0.25)',
               transform: 'translateY(-1px)',
@@ -448,7 +448,7 @@ export function MessageFeed() {
         <HStack justify="space-between" px={1}>
           <HStack spacing={2}>
             <Text fontSize="xs" color="whiteAlpha.300">
-              Showing callouts to
+              Showing callouts from
             </Text>
             <Text fontSize="xs" fontFamily="mono" color="red.300" fontWeight="600">
               {truncateAddress(searchedAddress)}
@@ -512,7 +512,7 @@ export function MessageFeed() {
             Search for callouts
           </Text>
           <Text fontSize="sm" color="whiteAlpha.250">
-            Enter an address above to find on-chain messages sent to it.
+            Enter an address to see the callout messages it has sent.
           </Text>
         </Box>
       )}

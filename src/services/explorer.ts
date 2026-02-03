@@ -54,7 +54,7 @@ export interface BlockScoutTxListResponse {
 /* ── Fetch helpers ───────────────────────────────────────── */
 
 /**
- * Fetch transactions sent TO a given address on PulseChain.
+ * Fetch transactions sent FROM a given address on PulseChain.
  * Returns the raw BlockScout response with pagination support.
  */
 export async function fetchAddressTransactions(
@@ -62,7 +62,7 @@ export async function fetchAddressTransactions(
   nextPageParams?: BlockScoutNextPage | null,
 ): Promise<BlockScoutTxListResponse> {
   const url = new URL(`${BLOCKSCOUT_BASE}/addresses/${address}/transactions`)
-  url.searchParams.set('type', 'to')
+  url.searchParams.set('type', 'from')
 
   if (nextPageParams) {
     url.searchParams.set('block_number', String(nextPageParams.block_number))
