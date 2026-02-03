@@ -15,6 +15,11 @@ vi.mock('viem', () => ({
   isAddress: (addr: string) => /^0x[0-9a-fA-F]{40}$/.test(addr),
 }))
 
+// Mock wagmi's useAccount
+vi.mock('wagmi', () => ({
+  useAccount: () => ({ address: undefined }),
+}))
+
 function renderFeed() {
   return render(
     <ChakraProvider>
