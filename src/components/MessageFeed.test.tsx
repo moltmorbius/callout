@@ -35,20 +35,20 @@ describe('MessageFeed', () => {
 
   it('renders the search interface', () => {
     renderFeed()
-    expect(screen.getByLabelText('Target address to search')).toBeInTheDocument()
-    expect(screen.getByLabelText('Search for callouts to this address')).toBeInTheDocument()
+    expect(screen.getByLabelText('Sender address to search')).toBeInTheDocument()
+    expect(screen.getByLabelText('Search for callouts from this address')).toBeInTheDocument()
   })
 
   it('shows initial empty state before search', () => {
     renderFeed()
     expect(screen.getByText('Search for callouts')).toBeInTheDocument()
-    expect(screen.getByText('Enter an address above to find on-chain messages sent to it.')).toBeInTheDocument()
+    expect(screen.getByText('Enter an address to see the callout messages it has sent.')).toBeInTheDocument()
   })
 
   it('validates address before searching', async () => {
     renderFeed()
-    const input = screen.getByLabelText('Target address to search')
-    const button = screen.getByLabelText('Search for callouts to this address')
+    const input = screen.getByLabelText('Sender address to search')
+    const button = screen.getByLabelText('Search for callouts from this address')
 
     fireEvent.change(input, { target: { value: 'not-an-address' } })
     fireEvent.click(button)
@@ -78,8 +78,8 @@ describe('MessageFeed', () => {
     vi.mocked(explorer.transactionsToCallouts).mockReturnValue(mockCallouts)
 
     renderFeed()
-    const input = screen.getByLabelText('Target address to search')
-    const button = screen.getByLabelText('Search for callouts to this address')
+    const input = screen.getByLabelText('Sender address to search')
+    const button = screen.getByLabelText('Search for callouts from this address')
 
     fireEvent.change(input, { target: { value: '0x2222222222222222222222222222222222222222' } })
     fireEvent.click(button)
@@ -99,8 +99,8 @@ describe('MessageFeed', () => {
     vi.mocked(explorer.transactionsToCallouts).mockReturnValue([])
 
     renderFeed()
-    const input = screen.getByLabelText('Target address to search')
-    const button = screen.getByLabelText('Search for callouts to this address')
+    const input = screen.getByLabelText('Sender address to search')
+    const button = screen.getByLabelText('Search for callouts from this address')
 
     fireEvent.change(input, { target: { value: '0x2222222222222222222222222222222222222222' } })
     fireEvent.click(button)
@@ -116,8 +116,8 @@ describe('MessageFeed', () => {
     )
 
     renderFeed()
-    const input = screen.getByLabelText('Target address to search')
-    const button = screen.getByLabelText('Search for callouts to this address')
+    const input = screen.getByLabelText('Sender address to search')
+    const button = screen.getByLabelText('Search for callouts from this address')
 
     fireEvent.change(input, { target: { value: '0x2222222222222222222222222222222222222222' } })
     fireEvent.click(button)
@@ -129,7 +129,7 @@ describe('MessageFeed', () => {
 
   it('supports Enter key to search', () => {
     renderFeed()
-    const input = screen.getByLabelText('Target address to search')
+    const input = screen.getByLabelText('Sender address to search')
 
     fireEvent.change(input, { target: { value: '0x2222222222222222222222222222222222222222' } })
     fireEvent.keyDown(input, { key: 'Enter' })
