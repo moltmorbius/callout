@@ -16,6 +16,7 @@ import {
 import { keyframes } from '@emotion/react'
 import { useState, useCallback } from 'react'
 import { isAddress } from 'viem'
+import { useAccount } from 'wagmi'
 import {
   fetchAddressTransactions,
   transactionsToCallouts,
@@ -260,6 +261,7 @@ function CalloutCard({ callout, index }: CalloutCardProps) {
 /* ── MessageFeed ─────────────────────────────────────────────── */
 
 export function MessageFeed() {
+  const { address: connectedAddress } = useAccount()
   const [addressInput, setAddressInput] = useState('')
   const [searchedAddress, setSearchedAddress] = useState<string | null>(null)
   const [callouts, setCallouts] = useState<Callout[]>([])
@@ -325,6 +327,31 @@ export function MessageFeed() {
         <Text fontSize="xs" color="whiteAlpha.300" lineHeight="1.6" mt={1} mb={4}>
           Enter an address to see on-chain callout messages sent to it. Scans PulseChain transactions and decodes calldata as text.
         </Text>
+
+        {/* Connected wallet shortcut — disappears once populated */}
+        {connectedAddress && addressInput.toLowerCase() !== connectedAddress.toLowerCase() && (
+          <Button
+            variant="ghost"
+            size="sm"
+            h="28px"
+            px={2}
+            mb={1}
+            fontSize="xs"
+            fontFamily="mono"
+            fontWeight="600"
+            color="whiteAlpha.350"
+            letterSpacing="0.02em"
+            borderRadius="md"
+            onClick={() => setAddressInput(connectedAddress)}
+            _hover={{
+              color: 'red.300',
+              bg: 'transparent',
+            }}
+            transition="color 0.15s"
+          >
+            Select Connected: {truncateAddress(connectedAddress)}
+          </Button>
+        )}
 
         {/* Address input */}
         <HStack spacing={2}>
