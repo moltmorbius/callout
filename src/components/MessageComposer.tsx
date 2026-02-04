@@ -32,6 +32,7 @@ import { keyframes } from '@emotion/react'
 import {
   templateCategories,
   getTemplatesByCategory,
+  messageTemplates,
   type TemplateCategoryId,
   type MessageTemplate,
 } from '../config/templates'
@@ -104,6 +105,8 @@ const categoryColors: Record<string, {
   },
 }
 
+const STORAGE_KEY = 'callout-composer-state'
+
 export function MessageComposer() {
   const { isConnected, address: walletAddress } = useAccount()
   const chainId = useChainId()
@@ -113,22 +116,43 @@ export function MessageComposer() {
   // Track whether user manually cleared receive_address to prevent auto-inject
   const receiveAddressManuallyCleared = useRef(false)
 
+  // ── Load saved state from localStorage ──────────────────────────
+  const loadSavedState = useCallback(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (!saved) return null
+      return JSON.parse(saved)
+    } catch {
+      return null
+    }
+  }, [])
+
   // ── Address state ────────────────────────────────────────────────
-  const [targetAddress, setTargetAddress] = useState('')
+  const [targetAddress, setTargetAddress] = useState(() => loadSavedState()?.targetAddress || '')
 
   // ── Template state ───────────────────────────────────────────────
-  const [selectedCategoryId, setSelectedCategoryId] = useState<TemplateCategoryId | null>(null)
-  const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(null)
-  const [variableValues, setVariableValues] = useState<Record<string, string>>({})
-  const [isCustomMode, setIsCustomMode] = useState(false)
-  const [customMessage, setCustomMessage] = useState('')
+  const savedState = loadSavedState()
+  const [selectedCategoryId, setSelectedCategoryId] = useState<TemplateCategoryId | null>(
+    savedState?.selectedCategoryId || null
+  )
+  const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(() => {
+    if (savedState?.selectedTemplateId) {
+      return messageTemplates.find(t => t.id === savedState.selectedTemplateId) || null
+    }
+    return null
+  })
+  const [variableValues, setVariableValues] = useState<Record<string, string>>(
+    savedState?.variableValues || {}
+  )
+  const [isCustomMode, setIsCustomMode] = useState(savedState?.isCustomMode || false)
+  const [customMessage, setCustomMessage] = useState(savedState?.customMessage || '')
   
   // ── Message editing state ────────────────────────────────────────
   const [isEditingMessage, setIsEditingMessage] = useState(false)
   const [editedMessage, setEditedMessage] = useState('')
 
   // ── Encryption state ─────────────────────────────────────────────
-  const [encryptEnabled, setEncryptEnabled] = useState(false)
+  const [encryptEnabled, setEncryptEnabled] = useState(savedState?.encryptEnabled || false)
   const [encryptPassphrase, setEncryptPassphrase] = useState('')
 
   // ── TX state ─────────────────────────────────────────────────────
@@ -140,6 +164,24 @@ export function MessageComposer() {
     if (!selectedCategoryId) return []
     return getTemplatesByCategory(selectedCategoryId)
   }, [selectedCategoryId])
+
+  // ── Save state to localStorage ──────────────────────────────────
+  useEffect(() => {
+    try {
+      const stateToSave = {
+        targetAddress,
+        selectedCategoryId,
+        selectedTemplateId: selectedTemplate?.id,
+        variableValues,
+        isCustomMode,
+        customMessage,
+        encryptEnabled,
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [targetAddress, selectedCategoryId, selectedTemplate, variableValues, isCustomMode, customMessage, encryptEnabled])
 
   // Auto-inject wallet address into receive_address ONLY if user hasn't manually cleared it
   useEffect(() => {

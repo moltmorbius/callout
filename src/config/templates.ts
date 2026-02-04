@@ -111,6 +111,7 @@ const VAR_DEADLINE: TemplateVariable = {
   label: 'Deadline',
   placeholder: 'e.g. 48 hours, July 30 2025',
   type: 'text',
+  optional: true,
 }
 
 const VAR_TOKEN_NAME: TemplateVariable = {
@@ -162,8 +163,7 @@ export const messageTemplates: MessageTemplate[] = [
     emoji: '🤝',
     template:
       'This is a message regarding transaction ${tx_hash}. ' +
-      'We are offering a white hat bounty: return 90% of the funds to ${receive_address} and keep 10% as a legitimate bounty. ' +
-      'No further action will be pursued if funds are returned by ${deadline}. This is a good-faith offer.',
+      'We are offering a white hat bounty: return 90% of the funds to ${receive_address} and keep 10% as a legitimate bounty.${deadline? No further action will be pursued if funds are returned by ${deadline}.} This is a good-faith offer.',
     description: 'Simple bounty offer using tx hash only',
     variables: [VAR_TX_HASH, VAR_RECEIVE_ADDRESS, VAR_DEADLINE],
   },
@@ -174,8 +174,7 @@ export const messageTemplates: MessageTemplate[] = [
     emoji: '🤝',
     template:
       'This is a message regarding funds taken from ${exploited_address}. ' +
-      'We are offering a white hat bounty: return 90% of the ${amount} ${token_name} to ${receive_address} and keep 10% as a legitimate bounty. ' +
-      'No further action will be pursued if funds are returned by ${deadline}. This is a good-faith offer.',
+      'We are offering a white hat bounty: return 90% of the ${amount} ${token_name} to ${receive_address} and keep 10% as a legitimate bounty.${deadline? No further action will be pursued if funds are returned by ${deadline}.} This is a good-faith offer.',
     description: 'Detailed bounty offer with specific amounts',
     variables: [VAR_EXPLOITED_ADDRESS, VAR_AMOUNT, VAR_TOKEN_NAME, VAR_RECEIVE_ADDRESS, VAR_DEADLINE],
   },
@@ -198,8 +197,8 @@ export const messageTemplates: MessageTemplate[] = [
     categoryId: 'scam-recovery',
     emoji: '⏰',
     template:
-      'FINAL WARNING: You have until ${deadline} to return ${amount} ${token_name} to ${receive_address}. ' +
-      'After this deadline, all collected evidence including transaction traces, wallet clustering data, and exchange deposit records ' +
+      'FINAL WARNING: Return ${amount} ${token_name} to ${receive_address}${deadline? by ${deadline}}. ' +
+      'All collected evidence including transaction traces, wallet clustering data, and exchange deposit records ' +
       'will be submitted to relevant authorities and published publicly. ' +
       'This is your last opportunity to resolve this without escalation.',
     description: 'Final deadline with specific consequences',
@@ -256,7 +255,7 @@ export const messageTemplates: MessageTemplate[] = [
     template:
       'You exploited token approvals via contract ${contract_address} to drain ${amount} ${token_name} from multiple wallets including ${exploited_address}. ' +
       'All exploit transactions have been traced and documented. ' +
-      'Return stolen funds to ${receive_address} by ${deadline}. ' +
+      'Return stolen funds to ${receive_address}${deadline? by ${deadline}}. ' +
       'Exchanges have been notified and are monitoring for deposits from flagged addresses.',
     description: 'Direct demand to approval exploiter with evidence mention',
     variables: [VAR_CONTRACT_ADDRESS, VAR_AMOUNT, VAR_TOKEN_NAME, VAR_EXPLOITED_ADDRESS, VAR_RECEIVE_ADDRESS, VAR_DEADLINE],
@@ -305,6 +304,7 @@ export function getTemplateById(id: string): MessageTemplate | undefined {
 /**
  * Apply variable values to a template string.
  * Replaces all `${key}` placeholders with the corresponding value.
+ * Supports conditional blocks: `${key? text with ${key} }` - only shown if key has value.
  * Unfilled required variables are shown as `[key]` for visibility.
  * Unfilled optional variables are removed (empty string).
  */
@@ -313,7 +313,21 @@ export function applyTemplate(
   variables: Record<string, string>,
   templateObj?: MessageTemplate,
 ): string {
-  return template.replace(/\$\{(\w+)\}/g, (_match, key: string) => {
+  // First, process conditional blocks ${key? ... }
+  let result = template.replace(/\$\{(\w+)\?\s*([^}]+)\s*\}/g, (_match, key: string, content: string) => {
+    const value = variables[key]
+    if (!value || !value.trim()) return ''
+    
+    // Replace ${key} within the conditional content with the actual value
+    return content.replace(/\$\{(\w+)\}/g, (_m, innerKey: string) => {
+      if (innerKey === key) return value.trim()
+      const innerValue = variables[innerKey]
+      return innerValue && innerValue.trim() ? innerValue.trim() : `[${innerKey}]`
+    })
+  })
+  
+  // Then process regular ${key} replacements
+  result = result.replace(/\$\{(\w+)\}/g, (_match, key: string) => {
     const value = variables[key]
     if (value && value.trim()) return value.trim()
     
@@ -321,6 +335,8 @@ export function applyTemplate(
     const isOptional = templateObj?.variables.find(v => v.key === key)?.optional
     return isOptional ? '' : `[${key}]`
   })
+  
+  return result
 }
 
 /** Extract all variable keys referenced in a template string */
