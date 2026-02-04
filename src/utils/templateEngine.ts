@@ -9,18 +9,22 @@ export function applyTemplate(
   template: MessageTemplate,
   variables: Record<string, string>,
 ): string {
-  return applyVars(template.template, variables)
+  return applyVars(template.template, variables, template)
 }
 
 /**
  * Check whether all required variables for a template have been filled.
- * Returns `true` if every variable has a non-empty value.
+ * Returns `true` if every required (non-optional) variable has a non-empty value.
+ * Optional variables are skipped in this check.
  */
 export function allVariablesFilled(
   template: MessageTemplate,
   variables: Record<string, string>,
 ): boolean {
   return template.variables.every((v) => {
+    // Skip optional variables
+    if (v.optional) return true
+    
     const val = variables[v.key]
     return val !== undefined && val.trim().length > 0
   })
@@ -58,14 +62,16 @@ export function validateVariable(
 }
 
 /**
- * Get the count of filled vs total variables for a template.
+ * Get the count of filled vs total REQUIRED variables for a template.
+ * Optional variables are not counted.
  */
 export function getVariableProgress(
   template: MessageTemplate,
   variables: Record<string, string>,
 ): { filled: number; total: number } {
-  const total = template.variables.length
-  const filled = template.variables.filter((v) => {
+  const requiredVars = template.variables.filter(v => !v.optional)
+  const total = requiredVars.length
+  const filled = requiredVars.filter((v) => {
     const val = variables[v.key]
     return val !== undefined && val.trim().length > 0
   }).length

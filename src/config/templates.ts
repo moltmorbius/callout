@@ -18,6 +18,8 @@ export interface TemplateVariable {
   placeholder: string
   /** Controls input type / validation */
   type: VariableType
+  /** If true, this field is optional and can be left blank */
+  optional?: boolean
 }
 
 // ── Template & category types ───────────────────────────────────────
@@ -116,6 +118,7 @@ const VAR_TOKEN_NAME: TemplateVariable = {
   label: 'Token Name',
   placeholder: 'e.g. ETH, USDC, PLS',
   type: 'text',
+  optional: true,
 }
 
 const VAR_AMOUNT: TemplateVariable = {
@@ -123,6 +126,15 @@ const VAR_AMOUNT: TemplateVariable = {
   label: 'Amount',
   placeholder: 'e.g. 150,000',
   type: 'text',
+  optional: true,
+}
+
+const VAR_TX_HASH: TemplateVariable = {
+  key: 'tx_hash',
+  label: 'Transaction Hash',
+  placeholder: '0x... transaction hash of the exploit',
+  type: 'text',
+  optional: true,
 }
 
 const VAR_PROJECT_NAME: TemplateVariable = {
@@ -144,15 +156,27 @@ const VAR_CONTRACT_ADDRESS: TemplateVariable = {
 export const messageTemplates: MessageTemplate[] = [
   // ── Scam Recovery ─────────────────────────────────────────────────
   {
+    id: 'scam-bounty-simple',
+    name: 'White Hat Bounty (Simple)',
+    categoryId: 'scam-recovery',
+    emoji: '🤝',
+    template:
+      'This is a message regarding transaction ${tx_hash}. ' +
+      'We are offering a white hat bounty: return 90% of the funds to ${receive_address} and keep 10% as a legitimate bounty. ' +
+      'No further action will be pursued if funds are returned by ${deadline}. This is a good-faith offer.',
+    description: 'Simple bounty offer using tx hash only',
+    variables: [VAR_TX_HASH, VAR_RECEIVE_ADDRESS, VAR_DEADLINE],
+  },
+  {
     id: 'scam-bounty',
-    name: 'White Hat Bounty Offer',
+    name: 'White Hat Bounty (Detailed)',
     categoryId: 'scam-recovery',
     emoji: '🤝',
     template:
       'This is a message regarding funds taken from ${exploited_address}. ' +
       'We are offering a white hat bounty: return 90% of the ${amount} ${token_name} to ${receive_address} and keep 10% as a legitimate bounty. ' +
       'No further action will be pursued if funds are returned by ${deadline}. This is a good-faith offer.',
-    description: 'Offer 90/10 split — professional, assumes possible white hat',
+    description: 'Detailed bounty offer with specific amounts',
     variables: [VAR_EXPLOITED_ADDRESS, VAR_AMOUNT, VAR_TOKEN_NAME, VAR_RECEIVE_ADDRESS, VAR_DEADLINE],
   },
   {
@@ -281,15 +305,21 @@ export function getTemplateById(id: string): MessageTemplate | undefined {
 /**
  * Apply variable values to a template string.
  * Replaces all `${key}` placeholders with the corresponding value.
- * Unfilled variables are left as `[key]` for visibility.
+ * Unfilled required variables are shown as `[key]` for visibility.
+ * Unfilled optional variables are removed (empty string).
  */
 export function applyTemplate(
   template: string,
   variables: Record<string, string>,
+  templateObj?: MessageTemplate,
 ): string {
   return template.replace(/\$\{(\w+)\}/g, (_match, key: string) => {
     const value = variables[key]
-    return value && value.trim() ? value.trim() : `[${key}]`
+    if (value && value.trim()) return value.trim()
+    
+    // Check if this is an optional variable
+    const isOptional = templateObj?.variables.find(v => v.key === key)?.optional
+    return isOptional ? '' : `[${key}]`
   })
 }
 

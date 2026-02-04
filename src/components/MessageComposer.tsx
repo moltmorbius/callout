@@ -686,6 +686,11 @@ export function MessageComposer() {
                       <Text fontSize="11px" fontWeight="700" letterSpacing="0.06em"
                         textTransform="uppercase" color="whiteAlpha.400">
                         {variable.label}
+                        {variable.optional && (
+                          <Text as="span" fontSize="10px" ml={1} color="whiteAlpha.250" fontWeight="500">
+                            (optional)
+                          </Text>
+                        )}
                       </Text>
                       {isFilled && !error && (
                         <Box w="6px" h="6px" borderRadius="full" bg="green.400" />
