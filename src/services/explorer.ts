@@ -75,6 +75,12 @@ export async function fetchAddressTransactions(
   }
 
   const res = await fetch(url.toString())
+  
+  // BlockScout returns 404 for addresses with no transactions
+  if (res.status === 404) {
+    return { items: [], next_page_params: null }
+  }
+  
   if (!res.ok) {
     throw new Error(`BlockScout API error: ${res.status} ${res.statusText}`)
   }
