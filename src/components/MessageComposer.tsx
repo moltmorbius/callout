@@ -18,10 +18,15 @@ import {
   Link,
   Collapse,
   SimpleGrid,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
 } from '@chakra-ui/react'
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { ComposerConnectButton } from './WalletButton'
-import { useAccount, useEstimateGas, useSendTransaction, useChainId } from 'wagmi'
+import { useAccount, useEstimateGas, useSendTransaction, useChainId, useSwitchChain } from 'wagmi'
 import { type Address, isAddress, parseEther } from 'viem'
 import { keyframes } from '@emotion/react'
 import {
@@ -38,7 +43,7 @@ import {
 } from '../utils/templateEngine'
 import { encodeMessage } from '../utils/encoding'
 import { encryptMessage } from '../utils/encryption'
-import { getExplorerTxUrl } from '../config/web3'
+import { getExplorerTxUrl, networks } from '../config/web3'
 import { cardStyle } from '../shared/styles'
 import { SectionLabel } from '../shared/SectionLabel'
 
@@ -102,7 +107,11 @@ const categoryColors: Record<string, {
 export function MessageComposer() {
   const { isConnected, address: walletAddress } = useAccount()
   const chainId = useChainId()
+  const { switchChain } = useSwitchChain()
   const toast = useToast()
+
+  // Track whether user manually cleared receive_address to prevent auto-inject
+  const receiveAddressManuallyCleared = useRef(false)
 
   // ── Address state ────────────────────────────────────────────────
   const [targetAddress, setTargetAddress] = useState('')
@@ -113,6 +122,10 @@ export function MessageComposer() {
   const [variableValues, setVariableValues] = useState<Record<string, string>>({})
   const [isCustomMode, setIsCustomMode] = useState(false)
   const [customMessage, setCustomMessage] = useState('')
+  
+  // ── Message editing state ────────────────────────────────────────
+  const [isEditingMessage, setIsEditingMessage] = useState(false)
+  const [editedMessage, setEditedMessage] = useState('')
 
   // ── Encryption state ─────────────────────────────────────────────
   const [encryptEnabled, setEncryptEnabled] = useState(false)
@@ -128,31 +141,34 @@ export function MessageComposer() {
     return getTemplatesByCategory(selectedCategoryId)
   }, [selectedCategoryId])
 
-  // Auto-inject wallet address into receive_address if user hasn't touched it
+  // Auto-inject wallet address into receive_address ONLY if user hasn't manually cleared it
   useEffect(() => {
     if (
       selectedTemplate &&
       walletAddress &&
       selectedTemplate.variables.some((v) => v.key === 'receive_address') &&
-      !variableValues['receive_address']
+      !variableValues['receive_address'] &&
+      !receiveAddressManuallyCleared.current
     ) {
       setVariableValues((prev) => ({ ...prev, receive_address: walletAddress }))
     }
-  }, [selectedTemplate, walletAddress, variableValues])
+  }, [selectedTemplate, walletAddress]) // Removed variableValues from deps to prevent loop
 
   // ── Build the final message ──────────────────────────────────────
   const finalMessage = useMemo(() => {
+    if (isEditingMessage) return editedMessage
     if (isCustomMode) return customMessage
     if (!selectedTemplate) return ''
     return applyTemplate(selectedTemplate, variableValues)
-  }, [isCustomMode, customMessage, selectedTemplate, variableValues])
+  }, [isEditingMessage, editedMessage, isCustomMode, customMessage, selectedTemplate, variableValues])
 
   // ── Validation: are all template variables filled? ───────────────
   const isTemplateFilled = useMemo(() => {
     if (isCustomMode) return customMessage.trim().length > 0
+    if (isEditingMessage) return editedMessage.trim().length > 0
     if (!selectedTemplate) return false
     return allVariablesFilled(selectedTemplate, variableValues)
-  }, [isCustomMode, customMessage, selectedTemplate, variableValues])
+  }, [isCustomMode, customMessage, isEditingMessage, editedMessage, selectedTemplate, variableValues])
 
   // ── Encode to calldata ───────────────────────────────────────────
   const [calldata, setCalldata] = useState<`0x${string}` | undefined>(undefined)
@@ -233,13 +249,15 @@ export function MessageComposer() {
     setSelectedTemplate(null)
     setVariableValues({})
     setIsCustomMode(false)
+    setIsEditingMessage(false)
+    receiveAddressManuallyCleared.current = false
   }, [])
 
   const handleTemplateSelect = useCallback((template: MessageTemplate) => {
     setSelectedTemplate(template)
     // Pre-fill receive_address with connected wallet
     const initial: Record<string, string> = {}
-    if (walletAddress) {
+    if (walletAddress && !receiveAddressManuallyCleared.current) {
       for (const v of template.variables) {
         if (v.key === 'receive_address') {
           initial[v.key] = walletAddress
@@ -248,6 +266,7 @@ export function MessageComposer() {
     }
     setVariableValues(initial)
     setIsCustomMode(false)
+    setIsEditingMessage(false)
   }, [walletAddress])
 
   const handleCustomMode = useCallback(() => {
@@ -255,22 +274,44 @@ export function MessageComposer() {
     setSelectedTemplate(null)
     setVariableValues({})
     setIsCustomMode(true)
+    setIsEditingMessage(false)
+    receiveAddressManuallyCleared.current = false
   }, [])
 
   const handleVariableChange = useCallback((key: string, value: string) => {
     setVariableValues((prev) => ({ ...prev, [key]: value }))
+    // Track if user manually cleared receive_address
+    if (key === 'receive_address' && !value) {
+      receiveAddressManuallyCleared.current = true
+    }
   }, [])
 
   const handleBackToCategories = useCallback(() => {
     setSelectedCategoryId(null)
     setSelectedTemplate(null)
     setVariableValues({})
+    setIsEditingMessage(false)
+    receiveAddressManuallyCleared.current = false
   }, [])
 
   const handleBackToTemplates = useCallback(() => {
     setSelectedTemplate(null)
     setVariableValues({})
+    setIsEditingMessage(false)
+    receiveAddressManuallyCleared.current = false
   }, [])
+
+  const handleEditMessage = useCallback(() => {
+    setEditedMessage(finalMessage)
+    setIsEditingMessage(true)
+  }, [finalMessage])
+
+  const handleSaveEdit = useCallback(() => {
+    setIsEditingMessage(false)
+  }, [])
+
+  // Get current network info
+  const currentNetwork = networks.find(n => n.id === chainId)
 
   // ── Render: not connected ────────────────────────────────────────
   const _isDemo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('demo')
@@ -307,6 +348,55 @@ export function MessageComposer() {
 
   return (
     <VStack spacing={4} align="stretch">
+      {/* ── Network Selector ── */}
+      {isConnected && (
+        <Box {...cardStyle} py={3}>
+          <HStack justify="space-between">
+            <HStack spacing={2}>
+              <Text fontSize="xs" color="whiteAlpha.400" fontWeight="700" letterSpacing="0.05em" textTransform="uppercase">
+                Network
+              </Text>
+              <Badge
+                colorScheme="blue"
+                variant="solid"
+                fontSize="10px"
+                fontWeight="700"
+                borderRadius="md"
+                px={2}
+              >
+                {currentNetwork?.name || `Chain ${chainId}`}
+              </Badge>
+            </HStack>
+            <Menu>
+              <MenuButton
+                as={Button}
+                size="sm"
+                variant="ghost"
+                fontSize="xs"
+                color="whiteAlpha.500"
+                _hover={{ color: 'whiteAlpha.700', bg: 'whiteAlpha.50' }}
+              >
+                Switch Network →
+              </MenuButton>
+              <MenuList bg="gray.900" borderColor="whiteAlpha.200">
+                {networks.map((network) => (
+                  <MenuItem
+                    key={network.id}
+                    onClick={() => switchChain?.({ chainId: Number(network.id) })}
+                    bg="gray.900"
+                    _hover={{ bg: 'whiteAlpha.100' }}
+                    fontSize="sm"
+                    isDisabled={network.id === chainId}
+                  >
+                    {network.name} {network.id === chainId && '✓'}
+                  </MenuItem>
+                ))}
+              </MenuList>
+            </Menu>
+          </HStack>
+        </Box>
+      )}
+
       {/* ── Target Address ── */}
       <Box
         {...cardStyle}
@@ -588,6 +678,7 @@ export function MessageComposer() {
                 const error = value ? validateVariable(variable, value) : null
                 const isFilled = value.trim().length > 0
                 const isAddr = variable.type === 'address'
+                const isDeadline = variable.key === 'deadline'
 
                 return (
                   <Box key={variable.key}>
@@ -603,26 +694,54 @@ export function MessageComposer() {
                         <Text fontSize="10px" color="orange.400" fontWeight="600">{error}</Text>
                       )}
                     </HStack>
-                    <Input
-                      placeholder={variable.placeholder}
-                      value={value}
-                      onChange={(e) => handleVariableChange(variable.key, e.target.value)}
-                      aria-label={variable.label}
-                      fontFamily={isAddr ? 'mono' : 'body'}
-                      fontSize="sm"
-                      bg="rgba(6, 6, 15, 0.9)"
-                      h="46px"
-                      borderColor={error ? 'orange.500' : isFilled ? (activeColors?.border || 'whiteAlpha.200') : 'whiteAlpha.100'}
-                      borderRadius="xl"
-                      _hover={{ borderColor: 'whiteAlpha.200' }}
-                      _focus={{
-                        borderColor: activeColors?.text || 'whiteAlpha.400',
-                        boxShadow: activeColors
-                          ? `0 0 0 1px ${activeColors.border}`
-                          : 'none',
-                      }}
-                      _placeholder={{ color: 'whiteAlpha.200' }}
-                    />
+                    {isDeadline ? (
+                      <Input
+                        type="datetime-local"
+                        value={value}
+                        onChange={(e) => handleVariableChange(variable.key, e.target.value)}
+                        aria-label={variable.label}
+                        fontSize="sm"
+                        bg="rgba(6, 6, 15, 0.9)"
+                        h="46px"
+                        borderColor={error ? 'orange.500' : isFilled ? (activeColors?.border || 'whiteAlpha.200') : 'whiteAlpha.100'}
+                        borderRadius="xl"
+                        _hover={{ borderColor: 'whiteAlpha.200' }}
+                        _focus={{
+                          borderColor: activeColors?.text || 'whiteAlpha.400',
+                          boxShadow: activeColors
+                            ? `0 0 0 1px ${activeColors.border}`
+                            : 'none',
+                        }}
+                        sx={{
+                          colorScheme: 'dark',
+                          '::-webkit-calendar-picker-indicator': {
+                            filter: 'invert(1)',
+                            cursor: 'pointer',
+                          }
+                        }}
+                      />
+                    ) : (
+                      <Input
+                        placeholder={variable.placeholder}
+                        value={value}
+                        onChange={(e) => handleVariableChange(variable.key, e.target.value)}
+                        aria-label={variable.label}
+                        fontFamily={isAddr ? 'mono' : 'body'}
+                        fontSize="sm"
+                        bg="rgba(6, 6, 15, 0.9)"
+                        h="46px"
+                        borderColor={error ? 'orange.500' : isFilled ? (activeColors?.border || 'whiteAlpha.200') : 'whiteAlpha.100'}
+                        borderRadius="xl"
+                        _hover={{ borderColor: 'whiteAlpha.200' }}
+                        _focus={{
+                          borderColor: activeColors?.text || 'whiteAlpha.400',
+                          boxShadow: activeColors
+                            ? `0 0 0 1px ${activeColors.border}`
+                            : 'none',
+                        }}
+                        _placeholder={{ color: 'whiteAlpha.200' }}
+                      />
+                    )}
                   </Box>
                 )
               })}
@@ -648,19 +767,59 @@ export function MessageComposer() {
               )
             })()}
 
-            {/* Live preview */}
+            {/* Live preview / editable */}
             <Box
               bg="rgba(6, 6, 15, 0.7)"
               p={4} borderRadius="xl"
               border="1px solid" borderColor="whiteAlpha.50"
             >
-              <Text fontSize="10px" color="whiteAlpha.300" fontWeight="700"
-                letterSpacing="0.08em" textTransform="uppercase" mb={2}>
-                Live Preview
-              </Text>
-              <Text fontSize="sm" color="whiteAlpha.500" fontStyle="italic" lineHeight="1.7">
-                &ldquo;{finalMessage}&rdquo;
-              </Text>
+              <HStack mb={2} justify="space-between">
+                <Text fontSize="10px" color="whiteAlpha.300" fontWeight="700"
+                  letterSpacing="0.08em" textTransform="uppercase">
+                  {isEditingMessage ? 'Editing Message' : 'Live Preview'}
+                </Text>
+                {!isEditingMessage && isTemplateFilled && (
+                  <IconButton
+                    aria-label="Edit message"
+                    icon={<Text fontSize="xs">✏️</Text>}
+                    size="xs"
+                    variant="ghost"
+                    color="whiteAlpha.400"
+                    _hover={{ color: 'whiteAlpha.700', bg: 'whiteAlpha.50' }}
+                    onClick={handleEditMessage}
+                  />
+                )}
+                {isEditingMessage && (
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    fontSize="xs"
+                    color="green.400"
+                    _hover={{ color: 'green.300', bg: 'whiteAlpha.50' }}
+                    onClick={handleSaveEdit}
+                  >
+                    ✓ Done
+                  </Button>
+                )}
+              </HStack>
+              {isEditingMessage ? (
+                <Textarea
+                  value={editedMessage}
+                  onChange={(e) => setEditedMessage(e.target.value)}
+                  fontSize="sm"
+                  color="whiteAlpha.600"
+                  lineHeight="1.7"
+                  rows={6}
+                  bg="rgba(6, 6, 15, 0.9)"
+                  borderColor="whiteAlpha.100"
+                  borderRadius="lg"
+                  _focus={{ borderColor: 'whiteAlpha.300' }}
+                />
+              ) : (
+                <Text fontSize="sm" color="whiteAlpha.500" fontStyle="italic" lineHeight="1.7">
+                  &ldquo;{finalMessage}&rdquo;
+                </Text>
+              )}
             </Box>
           </>
         )}
