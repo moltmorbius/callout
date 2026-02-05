@@ -28,14 +28,3 @@ dist-ssr
 .env.local
 .env.*.local
 .env
-
-# OpenClaw workspace files (should not be committed to project repos)
-AGENTS.md
-BOOTSTRAP.md
-HEARTBEAT.md
-IDENTITY.md
-SOUL.md
-TOOLS.md
-USER.md
-MEMORY.md
-memory/

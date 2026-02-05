@@ -130,7 +130,13 @@ const VAR_AMOUNT: TemplateVariable = {
   optional: true,
 }
 
-// VAR_TX_HASH removed - was unused
+const VAR_TX_HASH: TemplateVariable = {
+  key: 'tx_hash',
+  label: 'Transaction Hash',
+  placeholder: '0x... transaction hash of the exploit',
+  type: 'text',
+  optional: true,
+}
 
 const VAR_PROJECT_NAME: TemplateVariable = {
   key: 'project_name',
