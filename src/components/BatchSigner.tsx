@@ -63,14 +63,18 @@ export function BatchSigner() {
       return
     }
 
-    const headers = lines[0].split(',').map(h => h.trim())
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
     
-    if (!headers.includes('private_key') || !headers.includes('address') || 
-        !headers.includes('chain_id') || !headers.includes('tx_hash') || 
-        !headers.includes('scammer')) {
+    // Required columns (flexible naming)
+    const keyIdx = headers.findIndex(h => h === 'private_key' || h === 'key')
+    const chainIdx = headers.findIndex(h => h === 'chain_id' || h === 'chain')
+    const txIdx = headers.findIndex(h => h === 'tx_hash' || h === 'theft_tx' || h === 'hash')
+    const exploiterIdx = headers.findIndex(h => h === 'exploiter_address' || h === 'scammer' || h === 'exploiter')
+    
+    if (keyIdx === -1 || chainIdx === -1 || txIdx === -1 || exploiterIdx === -1) {
       toast({
         title: 'Invalid CSV',
-        description: 'CSV must have headers: private_key,address,chain_id,tx_hash,scammer',
+        description: 'CSV must have: private_key, chain_id, tx_hash, exploiter_address',
         status: 'error',
         duration: 5000,
       })
@@ -80,9 +84,7 @@ export function BatchSigner() {
     const parsed: BatchRow[] = lines.slice(1).map(line => {
       const values = line.split(',').map(v => v.trim())
       
-      // Validate private key and derive/verify address
-      let privateKey = values[0]
-      let address = values[1] as Address
+      let privateKey = values[keyIdx]
       
       // Ensure private key has 0x prefix
       if (!privateKey.startsWith('0x')) {
@@ -90,27 +92,23 @@ export function BatchSigner() {
       }
       
       try {
-        // Derive address from private key
+        // Derive victim address from private key
         const account = privateKeyToAccount(privateKey as `0x${string}`)
-        const derivedAddress = account.address
+        const victimAddress = account.address
         
-        // If address is provided, verify it matches
-        if (address && isAddress(address)) {
-          if (derivedAddress.toLowerCase() !== address.toLowerCase()) {
-            console.warn(`Address mismatch: CSV has ${address} but private key derives to ${derivedAddress}`)
-            return null // Skip this row
-          }
-        } else {
-          // If no address provided, use derived
-          address = derivedAddress
+        const exploiterAddress = values[exploiterIdx] as Address
+        
+        if (!isAddress(exploiterAddress)) {
+          console.warn(`Invalid exploiter address: ${exploiterAddress}`)
+          return null
         }
         
         return {
           privateKey,
-          address,
-          chainId: parseInt(values[2]),
-          theftTxHash: values[3],
-          scammer: values[4] as Address,
+          address: victimAddress,
+          chainId: parseInt(values[chainIdx]),
+          theftTxHash: values[txIdx],
+          scammer: exploiterAddress,
           status: 'pending' as const,
         }
       } catch (err) {
@@ -165,13 +163,15 @@ export function BatchSigner() {
     const template = messageTemplates.find(t => t.id === (templateId || selectedTemplateId))
     if (!template) {
       // Fallback to simple message
-      return `PROOF OF OWNERSHIP\n\nI am the legitimate owner of address ${row.address}.\n\nThis address was exploited in transaction:\n${row.theftTxHash}\n\nThe scammer who controls this address now:\n${row.scammer}\n\nThis message is signed with my private key to prove ownership.\nI am requesting the return of my funds.\n\nSigned on chain ID: ${row.chainId}`
+      return `PROOF OF OWNERSHIP\n\nI am the legitimate owner of address ${row.address}.\n\nThis address was exploited in transaction:\n${row.theftTxHash}\n\nThe exploiter who controls my address now:\n${row.scammer}\n\nThis message is signed with my private key to prove ownership.\nI am requesting the return of my funds.\n\nSigned on chain ID: ${row.chainId}`
     }
 
     // Map row data to template variables
     const variables: Record<string, string> = {
-      exploited_address: row.address,
-      spammer_address: row.scammer,
+      victim_address: row.address,
+      exploited_address: row.address, // Legacy alias
+      exploiter_address: row.scammer,
+      spammer_address: row.scammer, // Legacy alias
       receive_address: row.address, // Default to same address
       // Note: other variables (amount, token_name, etc.) would need to be in CSV or user-provided
     }
@@ -317,7 +317,7 @@ export function BatchSigner() {
 
         <VStack align="stretch" spacing={3}>
           <Text fontSize="sm" color="whiteAlpha.600" lineHeight="1.7">
-            Upload a CSV with compromised addresses + their private keys. Sign messages proving ownership, then send all callouts from your <Text as="span" color="green.300" fontWeight="600">secure connected wallet</Text>.
+            Upload a CSV with compromised private keys. Sign messages proving ownership, then send all callouts from your <Text as="span" color="green.300" fontWeight="600">secure connected wallet</Text>.
           </Text>
           
           <Box p={3} bg="rgba(138, 75, 255, 0.06)" borderRadius="lg" border="1px solid" borderColor="rgba(138, 75, 255, 0.2)">
@@ -326,10 +326,10 @@ export function BatchSigner() {
                 🔐 How it works:
               </Text>
               <Text fontSize="xs" color="whiteAlpha.500" lineHeight="1.6">
-                1. Each row signs a message with the <Text as="span" fontWeight="600">compromised</Text> private key<br/>
-                2. This proves you have access to that private key (possession, not timing)<br/>
-                3. All callouts are sent from your <Text as="span" fontWeight="600">secure</Text> wallet (the one you connect)<br/>
-                4. Private keys are validated: must match the address in CSV
+                1. Each row signs a message with the <Text as="span" fontWeight="600">victim's compromised</Text> private key<br/>
+                2. Victim address is automatically derived from the private key<br/>
+                3. This proves you have access to that private key (possession, not timing)<br/>
+                4. All callouts are sent from your <Text as="span" fontWeight="600">secure</Text> wallet (the one you connect)
               </Text>
             </VStack>
           </Box>
@@ -366,7 +366,7 @@ export function BatchSigner() {
             <Textarea
               value={csvText}
               onChange={(e) => setCsvText(e.target.value)}
-              placeholder="private_key,address,chain_id,tx_hash,scammer&#10;0x123...,0xabc...,1,0xdef...,0x456..."
+              placeholder="private_key,chain_id,tx_hash,exploiter_address&#10;0x123abc...,1,0xdef456...,0x789ghi..."
               fontSize="xs"
               fontFamily="monospace"
               minH="120px"
@@ -419,10 +419,10 @@ export function BatchSigner() {
             <Table size="sm" variant="simple">
               <Thead>
                 <Tr>
-                  <Th>Address</Th>
+                  <Th>Victim Address</Th>
                   <Th>Chain ID</Th>
                   <Th>Theft TX</Th>
-                  <Th>Scammer</Th>
+                  <Th>Exploiter</Th>
                   <Th>Status</Th>
                 </Tr>
               </Thead>
