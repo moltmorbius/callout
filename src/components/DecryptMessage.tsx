@@ -14,7 +14,7 @@ import {
 import { keyframes } from '@emotion/react'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { decodeMessage, isLikelyText } from '../utils/encoding'
-import { decryptMessage, isEncryptedMessage } from '../utils/encryption'
+import { decryptMessage, isEncrypted } from '../utils/encryption'
 import { fetchTransaction, isTxHash } from '../services/blockchain'
 import { CHAIN_INFO } from '../types/callout'
 import { cardStyle } from '../shared/styles'
@@ -160,7 +160,7 @@ export function DecryptMessage() {
         setIsDecoding(false)
         setShowResult(true)
 
-        if (isEncryptedMessage(decoded)) {
+        if (isEncrypted(decoded)) {
           toast({
             title: '🔒 Encrypted message detected',
             description: 'Enter the passphrase to unlock.',
@@ -517,7 +517,7 @@ export function DecryptMessage() {
             </Box>
 
             {/* Vault-style passphrase input for encrypted messages */}
-            {isEncryptedMessage(decodedMessage) && (
+            {isEncrypted(decodedMessage) && (
               <Box
                 mt={5}
                 p={4}

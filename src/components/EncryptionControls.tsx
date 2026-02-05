@@ -9,30 +9,23 @@ import {
   FormLabel,
   Tooltip,
   Collapse,
-  Badge,
   Spinner,
 } from '@chakra-ui/react'
 import { useState, useCallback } from 'react'
 import { searchTransactionAcrossChains, fetchAndRecoverPublicKey } from '../utils/publicKeyRecovery'
 
-export type EncryptionMode = 'disabled' | 'pubkey' | 'passphrase'
-
 interface EncryptionControlsProps {
-  mode: EncryptionMode
-  onModeChange: (mode: EncryptionMode) => void
+  enabled: boolean
+  onEnabledChange: (enabled: boolean) => void
   publicKey: string
   onPublicKeyChange: (pubkey: string) => void
-  passphrase: string
-  onPassphraseChange: (pass: string) => void
 }
 
 export function EncryptionControls({
-  mode,
-  onModeChange,
+  enabled,
+  onEnabledChange,
   publicKey,
   onPublicKeyChange,
-  passphrase,
-  onPassphraseChange,
 }: EncryptionControlsProps) {
   const [txHash, setTxHash] = useState('')
   const [isSearching, setIsSearching] = useState(false)
@@ -74,7 +67,7 @@ export function EncryptionControls({
 
   return (
     <Box>
-      <FormControl display="flex" alignItems="center" mb={mode !== 'disabled' ? 4 : 0}>
+      <FormControl display="flex" alignItems="center" mb={enabled ? 4 : 0}>
         <HStack flex={1} spacing={2.5}>
           <Text fontSize="sm" opacity={0.7}>🔒</Text>
           <FormLabel
@@ -83,11 +76,11 @@ export function EncryptionControls({
             letterSpacing="0.12em" textTransform="uppercase"
             color="whiteAlpha.400" cursor="pointer"
           >
-            Encrypt Message
+            Encrypt Message (ECIES)
           </FormLabel>
         </HStack>
         <Tooltip
-          label="Encrypt with recipient's public key or a shared passphrase"
+          label="Encrypt with recipient's public key — only they can decrypt with their private key"
           placement="top" bg="gray.800" color="gray.200"
           fontSize="xs" borderRadius="lg" px={3} py={2}
         >
@@ -95,39 +88,17 @@ export function EncryptionControls({
             <Switch
               id="encrypt-toggle"
               colorScheme="red" size="md"
-              isChecked={mode !== 'disabled'}
-              onChange={(e) => onModeChange(e.target.checked ? 'pubkey' : 'disabled')}
+              isChecked={enabled}
+              onChange={(e) => onEnabledChange(e.target.checked)}
             />
           </Box>
         </Tooltip>
       </FormControl>
 
-      <Collapse in={mode !== 'disabled'} animateOpacity>
+      <Collapse in={enabled} animateOpacity>
         <VStack spacing={3} align="stretch">
-          {/* Mode selector */}
-          <HStack spacing={2}>
-            <Badge
-              cursor="pointer"
-              onClick={() => onModeChange('pubkey')}
-              variant={mode === 'pubkey' ? 'solid' : 'outline'}
-              colorScheme={mode === 'pubkey' ? 'green' : 'gray'}
-              fontSize="10px" fontWeight="700" px={2} py={1} borderRadius="md"
-            >
-              🔐 Public Key
-            </Badge>
-            <Badge
-              cursor="pointer"
-              onClick={() => onModeChange('passphrase')}
-              variant={mode === 'passphrase' ? 'solid' : 'outline'}
-              colorScheme={mode === 'passphrase' ? 'yellow' : 'gray'}
-              fontSize="10px" fontWeight="700" px={2} py={1} borderRadius="md"
-            >
-              🔑 Passphrase
-            </Badge>
-          </HStack>
-
           {/* Public key mode */}
-          {mode === 'pubkey' && (
+          {(
             <VStack spacing={3} align="stretch">
               <Box>
                 <Text fontSize="11px" color="whiteAlpha.400" mb={1.5} fontWeight="700"
@@ -183,33 +154,10 @@ export function EncryptionControls({
 
               {!useManualPubkey && !publicKey && (
                 <Text fontSize="xs" color="whiteAlpha.300" lineHeight="1.6">
-                  Paste a transaction hash sent FROM the target address. We'll automatically recover their public key and encrypt the message so only they can decrypt it with their wallet.
+                  Paste a transaction hash sent FROM the target address. We'll automatically recover their public key and encrypt the message using ECIES (secp256k1). Only they can decrypt it with their wallet's private key.
                 </Text>
               )}
             </VStack>
-          )}
-
-          {/* Passphrase mode */}
-          {mode === 'passphrase' && (
-            <Box>
-              <Text fontSize="11px" color="whiteAlpha.400" mb={1.5} fontWeight="700"
-                letterSpacing="0.06em" textTransform="uppercase">
-                Encryption Passphrase
-              </Text>
-              <Input
-                placeholder="Enter shared passphrase..."
-                value={passphrase}
-                onChange={(e) => onPassphraseChange(e.target.value)}
-                type="password" fontSize="sm"
-                bg="rgba(6, 6, 15, 0.9)"
-                borderColor="whiteAlpha.100"
-                borderRadius="xl" h="46px"
-                _placeholder={{ color: 'whiteAlpha.200' }}
-              />
-              <Text fontSize="xs" color="whiteAlpha.300" mt={2} lineHeight="1.6">
-                ⚠ You must share this passphrase with the recipient separately (off-chain).
-              </Text>
-            </Box>
           )}
         </VStack>
       </Collapse>

@@ -39,8 +39,8 @@ import {
   getVariableProgress,
 } from '../utils/templateEngine'
 import { encodeMessage } from '../utils/encoding'
-import { encryptWithPublicKey, encryptWithPassphrase } from '../utils/encryption'
-import { EncryptionControls, type EncryptionMode } from './EncryptionControls'
+import { encryptMessage } from '../utils/encryption'
+import { EncryptionControls } from './EncryptionControls'
 import { getExplorerTxUrl, networks } from '../config/web3'
 import { cardStyle } from '../shared/styles'
 import { SectionLabel } from '../shared/SectionLabel'
@@ -149,11 +149,8 @@ export function MessageComposer() {
   const [editedMessage, setEditedMessage] = useState('')
 
   // ── Encryption state ─────────────────────────────────────────────
-  const [encryptionMode, setEncryptionMode] = useState<EncryptionMode>(
-    savedState?.encryptionMode || 'disabled'
-  )
+  const [encryptEnabled, setEncryptEnabled] = useState(savedState?.encryptEnabled || false)
   const [encryptPublicKey, setEncryptPublicKey] = useState('')
-  const [encryptPassphrase, setEncryptPassphrase] = useState('')
 
   // ── TX state ─────────────────────────────────────────────────────
   const [isSending, setIsSending] = useState(false)
@@ -175,13 +172,13 @@ export function MessageComposer() {
         variableValues,
         isCustomMode,
         customMessage,
-        encryptionMode,
+        encryptEnabled,
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
     } catch {
       // Ignore localStorage errors
     }
-  }, [targetAddress, selectedCategoryId, selectedTemplate, variableValues, isCustomMode, customMessage, encryptionMode])
+  }, [targetAddress, selectedCategoryId, selectedTemplate, variableValues, isCustomMode, customMessage, encryptEnabled])
 
   // Auto-inject wallet address into receive_address ONLY if user hasn't manually cleared it
   useEffect(() => {
@@ -221,23 +218,13 @@ export function MessageComposer() {
       return
     }
     
-    // Handle encryption based on mode
-    if (encryptionMode === 'pubkey' && encryptPublicKey) {
+    // Encrypt with ECIES if enabled and public key provided
+    if (encryptEnabled && encryptPublicKey) {
       let cancelled = false
-      encryptWithPublicKey(finalMessage, encryptPublicKey)
-        .then((encrypted) => {
-          if (!cancelled) setCalldata(encodeMessage(encrypted))
-        })
-        .catch(() => {
-          // Encryption failed — clear calldata so stale data isn't sent
-          if (!cancelled) setCalldata(undefined)
-        })
-      return () => { cancelled = true }
-    } else if (encryptionMode === 'passphrase' && encryptPassphrase) {
-      let cancelled = false
-      encryptWithPassphrase(finalMessage, encryptPassphrase)
-        .then((encrypted) => {
-          if (!cancelled) setCalldata(encodeMessage(encrypted))
+      encryptMessage(finalMessage, encryptPublicKey)
+        .then((encryptedHex) => {
+          // Raw ECIES output already in hex, just add 0x prefix
+          if (!cancelled) setCalldata(`0x${encryptedHex}` as `0x${string}`)
         })
         .catch(() => {
           // Encryption failed — clear calldata so stale data isn't sent
@@ -245,9 +232,10 @@ export function MessageComposer() {
         })
       return () => { cancelled = true }
     } else {
+      // No encryption - encode as UTF-8 hex
       setCalldata(encodeMessage(finalMessage))
     }
-  }, [finalMessage, encryptionMode, encryptPublicKey, encryptPassphrase])
+  }, [finalMessage, encryptEnabled, encryptPublicKey])
 
   const isValidTarget = targetAddress ? isAddress(targetAddress) : false
 
@@ -930,12 +918,10 @@ export function MessageComposer() {
       {/* ── Encryption ── */}
       <Box {...cardStyle}>
         <EncryptionControls
-          mode={encryptionMode}
-          onModeChange={setEncryptionMode}
+          enabled={encryptEnabled}
+          onEnabledChange={setEncryptEnabled}
           publicKey={encryptPublicKey}
           onPublicKeyChange={setEncryptPublicKey}
-          passphrase={encryptPassphrase}
-          onPassphraseChange={setEncryptPassphrase}
         />
       </Box>
 
