@@ -291,7 +291,7 @@ export function BatchSigner() {
               </Text>
               <Text fontSize="xs" color="whiteAlpha.500" lineHeight="1.6">
                 1. Each row signs a message with the <Text as="span" fontWeight="600">compromised</Text> private key<br/>
-                2. This proves you owned that address before it was stolen<br/>
+                2. This proves you have access to that private key (possession, not timing)<br/>
                 3. All callouts are sent from your <Text as="span" fontWeight="600">secure</Text> wallet (the one you connect)<br/>
                 4. Private keys are validated: must match the address in CSV
               </Text>
