@@ -11,6 +11,7 @@ import {
   Th,
   Td,
   Code,
+  Textarea,
   useToast,
 } from '@chakra-ui/react'
 import { useState, useCallback } from 'react'
@@ -56,9 +57,93 @@ export function BatchSigner() {
   const toast = useToast()
   const [rows, setRows] = useState<BatchRow[]>([])
   const [processing, setProcessing] = useState(false)
+  const [csvText, setCsvText] = useState('')
   const { sendTransactionAsync } = useSendTransaction()
 
-  // Parse CSV
+  // Parse CSV text into rows
+  const parseCSV = useCallback((csv: string) => {
+    const lines = csv.trim().split('\n')
+    if (lines.length < 2) {
+      toast({
+        title: 'Invalid CSV',
+        description: 'CSV must have at least a header row and one data row',
+        status: 'error',
+        duration: 5000,
+      })
+      return
+    }
+
+    const headers = lines[0].split(',').map(h => h.trim())
+    
+    if (!headers.includes('private_key') || !headers.includes('address') || 
+        !headers.includes('chain_id') || !headers.includes('tx_hash') || 
+        !headers.includes('scammer')) {
+      toast({
+        title: 'Invalid CSV',
+        description: 'CSV must have headers: private_key,address,chain_id,tx_hash,scammer',
+        status: 'error',
+        duration: 5000,
+      })
+      return
+    }
+
+    const parsed: BatchRow[] = lines.slice(1).map(line => {
+      const values = line.split(',').map(v => v.trim())
+      
+      // Validate private key and derive/verify address
+      let privateKey = values[0]
+      let address = values[1] as Address
+      
+      // Ensure private key has 0x prefix
+      if (!privateKey.startsWith('0x')) {
+        privateKey = `0x${privateKey}`
+      }
+      
+      try {
+        // Derive address from private key
+        const account = privateKeyToAccount(privateKey as `0x${string}`)
+        const derivedAddress = account.address
+        
+        // If address is provided, verify it matches
+        if (address && isAddress(address)) {
+          if (derivedAddress.toLowerCase() !== address.toLowerCase()) {
+            console.warn(`Address mismatch: CSV has ${address} but private key derives to ${derivedAddress}`)
+            return null // Skip this row
+          }
+        } else {
+          // If no address provided, use derived
+          address = derivedAddress
+        }
+        
+        return {
+          privateKey,
+          address,
+          chainId: parseInt(values[2]),
+          theftTxHash: values[3],
+          scammer: values[4] as Address,
+          status: 'pending' as const,
+        }
+      } catch (err) {
+        console.error('Invalid private key:', privateKey.slice(0, 10) + '...', err)
+        return null
+      }
+    }).filter((row): row is NonNullable<typeof row> => 
+      row !== null && 
+      row.address !== undefined &&
+      isAddress(row.address) && 
+      isAddress(row.scammer)
+    ) as BatchRow[]
+
+    setRows(parsed)
+    toast({
+      title: 'CSV Loaded',
+      description: `${parsed.length} rows parsed successfully`,
+      status: 'success',
+      duration: 3000,
+    })
+  }, [toast])
+
+  // Parse CSV from file upload
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -66,78 +151,24 @@ export function BatchSigner() {
     const reader = new FileReader()
     reader.onload = (event) => {
       const csv = event.target?.result as string
-      const lines = csv.trim().split('\n')
-      const headers = lines[0].split(',').map(h => h.trim())
-      
-      if (!headers.includes('private_key') || !headers.includes('address') || 
-          !headers.includes('chain_id') || !headers.includes('tx_hash') || 
-          !headers.includes('scammer')) {
-        toast({
-          title: 'Invalid CSV',
-          description: 'CSV must have headers: private_key,address,chain_id,tx_hash,scammer',
-          status: 'error',
-          duration: 5000,
-        })
-        return
-      }
-
-      const parsed: BatchRow[] = lines.slice(1).map(line => {
-        const values = line.split(',').map(v => v.trim())
-        
-        // Validate private key and derive/verify address
-        let privateKey = values[0]
-        let address = values[1] as Address
-        
-        // Ensure private key has 0x prefix
-        if (!privateKey.startsWith('0x')) {
-          privateKey = `0x${privateKey}`
-        }
-        
-        try {
-          // Derive address from private key
-          const account = privateKeyToAccount(privateKey as `0x${string}`)
-          const derivedAddress = account.address
-          
-          // If address is provided, verify it matches
-          if (address && isAddress(address)) {
-            if (derivedAddress.toLowerCase() !== address.toLowerCase()) {
-              console.warn(`Address mismatch: CSV has ${address} but private key derives to ${derivedAddress}`)
-              return null // Skip this row
-            }
-          } else {
-            // If no address provided, use derived
-            address = derivedAddress
-          }
-          
-          return {
-            privateKey,
-            address,
-            chainId: parseInt(values[2]),
-            theftTxHash: values[3],
-            scammer: values[4] as Address,
-            status: 'pending' as const,
-          }
-        } catch (err) {
-          console.error('Invalid private key:', privateKey.slice(0, 10) + '...', err)
-          return null
-        }
-      }).filter((row): row is NonNullable<typeof row> => 
-        row !== null && 
-        row.address !== undefined &&
-        isAddress(row.address) && 
-        isAddress(row.scammer)
-      ) as BatchRow[]
-
-      setRows(parsed)
-      toast({
-        title: 'CSV Loaded',
-        description: `${parsed.length} rows parsed successfully`,
-        status: 'success',
-        duration: 3000,
-      })
+      parseCSV(csv)
     }
     reader.readAsText(file)
-  }, [toast])
+  }, [parseCSV])
+
+  // Parse CSV from textarea
+  const handlePasteCSV = useCallback(() => {
+    if (!csvText.trim()) {
+      toast({
+        title: 'Empty Input',
+        description: 'Please paste CSV data first',
+        status: 'warning',
+        duration: 3000,
+      })
+      return
+    }
+    parseCSV(csvText)
+  }, [csvText, parseCSV, toast])
 
   // Sign all messages
   const handleSignAll = useCallback(async () => {
@@ -299,25 +330,56 @@ export function BatchSigner() {
           </Box>
         </VStack>
 
-        {/* CSV Upload */}
-        <Box>
-          <input
-            type="file"
-            accept=".csv"
-            onChange={handleFileUpload}
-            style={{ display: 'none' }}
-            id="csv-upload"
-          />
-          <Button
-            as="label"
-            htmlFor="csv-upload"
-            size="md"
-            colorScheme="purple"
-            cursor="pointer"
-          >
-            📂 Upload CSV
-          </Button>
-        </Box>
+        {/* CSV Input */}
+        <VStack align="stretch" spacing={3}>
+          <Text fontSize="xs" fontWeight="700" color="purple.300">
+            📥 Import CSV Data:
+          </Text>
+          
+          <HStack spacing={3}>
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+              id="csv-upload"
+            />
+            <Button
+              as="label"
+              htmlFor="csv-upload"
+              size="sm"
+              colorScheme="purple"
+              cursor="pointer"
+            >
+              📂 Upload File
+            </Button>
+            <Text fontSize="xs" color="whiteAlpha.400">or</Text>
+            <Text fontSize="xs" color="whiteAlpha.400">paste below:</Text>
+          </HStack>
+
+          <VStack align="stretch" spacing={2}>
+            <Textarea
+              value={csvText}
+              onChange={(e) => setCsvText(e.target.value)}
+              placeholder="private_key,address,chain_id,tx_hash,scammer&#10;0x123...,0xabc...,1,0xdef...,0x456..."
+              fontSize="xs"
+              fontFamily="monospace"
+              minH="120px"
+              bg="rgba(6, 6, 15, 0.5)"
+              borderColor="whiteAlpha.200"
+              _hover={{ borderColor: 'purple.400' }}
+              _focus={{ borderColor: 'purple.400', boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)' }}
+            />
+            <Button
+              size="sm"
+              colorScheme="purple"
+              onClick={handlePasteCSV}
+              isDisabled={!csvText.trim()}
+            >
+              ✨ Parse CSV
+            </Button>
+          </VStack>
+        </VStack>
 
         {/* Preview Table */}
         {rows.length > 0 && (
