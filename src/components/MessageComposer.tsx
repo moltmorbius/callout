@@ -22,7 +22,7 @@ import {
 } from '@chakra-ui/react'
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { ComposerConnectButton } from './WalletButton'
-import { useAccount, useEstimateGas, useSendTransaction, useChainId, useSwitchChain } from 'wagmi'
+import { useAccount, useEstimateGas, useSendTransaction, useSignMessage, useChainId, useSwitchChain } from 'wagmi'
 import { type Address, isAddress, parseEther } from 'viem'
 import { keyframes } from '@emotion/react'
 import {
@@ -155,6 +155,10 @@ export function MessageComposer() {
   // ── TX state ─────────────────────────────────────────────────────
   const [isSending, setIsSending] = useState(false)
   const [lastTxHash, setLastTxHash] = useState<string | null>(null)
+  
+  // ── Signature mode state ─────────────────────────────────────────
+  const [signMode, setSignMode] = useState(false) // true = sign only, false = send tx
+  const [lastSignature, setLastSignature] = useState<string | null>(null)
 
   // ── Derived: templates for selected category ─────────────────────
   const categoryTemplates = useMemo(() => {
@@ -284,6 +288,50 @@ export function MessageComposer() {
       setIsSending(false)
     }
   }, [isValidTarget, calldata, targetAddress, sendTransactionAsync, toast])
+
+  // ── Sign message (proof of ownership without sending) ────────────
+  const { signMessageAsync } = useSignMessage()
+
+  const handleSign = useCallback(async () => {
+    if (!finalMessage.trim()) {
+      toast({
+        title: 'No message to sign',
+        description: 'Please enter a message first.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      })
+      return
+    }
+
+    setIsSending(true)
+    setLastSignature(null)
+    setLastTxHash(null)
+
+    try {
+      const signature = await signMessageAsync({ message: finalMessage })
+      setLastSignature(signature)
+
+      toast({
+        title: 'Message Signed ✓',
+        description: 'Copy the message + signature to prove ownership.',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      })
+    } catch (err: any) {
+      console.error('Sign error:', err)
+      toast({
+        title: 'Signing Failed',
+        description: err.message || 'User rejected signature request',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      })
+    } finally {
+      setIsSending(false)
+    }
+  }, [finalMessage, signMessageAsync, toast])
 
   // ── Handlers ─────────────────────────────────────────────────────
 
@@ -974,8 +1022,8 @@ export function MessageComposer() {
             </Box>
           )}
 
-          {/* Gas estimate */}
-          {gasEstimate && (
+          {/* Gas estimate (only when sending) */}
+          {!signMode && gasEstimate && (
             <HStack
               mb={4} p={3}
               bg="rgba(6, 6, 15, 0.5)" borderRadius="lg"
@@ -990,40 +1038,178 @@ export function MessageComposer() {
             </HStack>
           )}
 
-          {/* Send button */}
+          {/* Sign mode toggle */}
+          <Box
+            mb={4} p={4}
+            bg="rgba(6, 6, 15, 0.5)" borderRadius="xl"
+            border="1px solid" borderColor="whiteAlpha.100"
+          >
+            <HStack justify="space-between" align="center">
+              <VStack align="start" spacing={1} flex={1}>
+                <HStack spacing={2}>
+                  <Text fontSize="sm" fontWeight="700" color="whiteAlpha.900">
+                    🔏 Sign Message (No Transaction)
+                  </Text>
+                </HStack>
+                <Text fontSize="xs" color="whiteAlpha.400" lineHeight="1.5">
+                  Prove ownership without sending. Useful if the address is compromised.
+                </Text>
+              </VStack>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setSignMode(!signMode)
+                  setLastSignature(null)
+                  setLastTxHash(null)
+                }}
+                bg={signMode ? 'rgba(138, 75, 255, 0.15)' : 'rgba(6, 6, 15, 0.5)'}
+                border="1px solid"
+                borderColor={signMode ? 'rgba(138, 75, 255, 0.3)' : 'whiteAlpha.100'}
+                color={signMode ? 'purple.300' : 'whiteAlpha.500'}
+                _hover={{
+                  bg: signMode ? 'rgba(138, 75, 255, 0.25)' : 'whiteAlpha.50',
+                }}
+              >
+                {signMode ? 'Enabled' : 'Disabled'}
+              </Button>
+            </HStack>
+          </Box>
+
+          {/* Send or Sign button */}
           <Button
             size="lg" width="full" h="60px"
             fontSize="md" fontWeight="900"
             letterSpacing="0.1em" textTransform="uppercase"
             isLoading={isSending}
-            loadingText="Broadcasting..."
-            isDisabled={!isValidTarget || !calldata}
-            onClick={handleSend}
-            aria-label="Send message on-chain permanently"
-            bg={(!isValidTarget || !calldata) ? 'rgba(220, 38, 38, 0.15)' : 'rgba(220, 38, 38, 0.9)'}
-            color={(!isValidTarget || !calldata) ? 'rgba(220, 38, 38, 0.4)' : 'white'}
+            loadingText={signMode ? 'Signing...' : 'Broadcasting...'}
+            isDisabled={signMode ? !finalMessage.trim() : (!isValidTarget || !calldata)}
+            onClick={signMode ? handleSign : handleSend}
+            aria-label={signMode ? 'Sign message to prove ownership' : 'Send message on-chain permanently'}
+            bg={
+              (signMode ? !finalMessage.trim() : (!isValidTarget || !calldata))
+                ? (signMode ? 'rgba(138, 75, 255, 0.15)' : 'rgba(220, 38, 38, 0.15)')
+                : (signMode ? 'rgba(138, 75, 255, 0.9)' : 'rgba(220, 38, 38, 0.9)')
+            }
+            color={
+              (signMode ? !finalMessage.trim() : (!isValidTarget || !calldata))
+                ? (signMode ? 'rgba(138, 75, 255, 0.4)' : 'rgba(220, 38, 38, 0.4)')
+                : 'white'
+            }
             border="2px solid"
-            borderColor={(!isValidTarget || !calldata) ? 'rgba(220, 38, 38, 0.1)' : 'rgba(220, 38, 38, 0.5)'}
+            borderColor={
+              (signMode ? !finalMessage.trim() : (!isValidTarget || !calldata))
+                ? (signMode ? 'rgba(138, 75, 255, 0.1)' : 'rgba(220, 38, 38, 0.1)')
+                : (signMode ? 'rgba(138, 75, 255, 0.5)' : 'rgba(220, 38, 38, 0.5)')
+            }
             borderRadius="xl"
             _hover={{
-              bg: 'red.600',
+              bg: signMode ? 'purple.600' : 'red.600',
               transform: 'translateY(-2px)',
-              boxShadow: '0 8px 50px rgba(220, 38, 38, 0.4), 0 0 80px rgba(220, 38, 38, 0.15)',
+              boxShadow: signMode
+                ? '0 8px 50px rgba(138, 75, 255, 0.4), 0 0 80px rgba(138, 75, 255, 0.15)'
+                : '0 8px 50px rgba(220, 38, 38, 0.4), 0 0 80px rgba(220, 38, 38, 0.15)',
             }}
-            _active={{ transform: 'translateY(0)', bg: 'red.700' }}
+            _active={{ transform: 'translateY(0)', bg: signMode ? 'purple.700' : 'red.700' }}
             _disabled={{
               cursor: 'not-allowed', opacity: 1,
-              _hover: { transform: 'none', boxShadow: 'none', bg: 'rgba(220, 38, 38, 0.15)' },
+              _hover: {
+                transform: 'none',
+                boxShadow: 'none',
+                bg: signMode ? 'rgba(138, 75, 255, 0.15)' : 'rgba(220, 38, 38, 0.15)',
+              },
             }}
             transition="all 0.2s"
-            boxShadow={(!isValidTarget || !calldata) ? 'none' : '0 4px 30px rgba(220, 38, 38, 0.3)'}
+            boxShadow={
+              (signMode ? !finalMessage.trim() : (!isValidTarget || !calldata))
+                ? 'none'
+                : (signMode
+                  ? '0 4px 30px rgba(138, 75, 255, 0.3)'
+                  : '0 4px 30px rgba(220, 38, 38, 0.3)')
+            }
           >
-            ⚠️ Send On-Chain — Permanent
+            {signMode ? '🔏 Sign Message' : '⚠️ Send On-Chain — Permanent'}
           </Button>
 
           <Text fontSize="10px" color="whiteAlpha.200" textAlign="center" mt={3} lineHeight="1.5">
-            This is irreversible. Your message will be inscribed on the blockchain forever.
+            {signMode
+              ? 'Signature proves you control this address without sending a transaction.'
+              : 'This is irreversible. Your message will be inscribed on the blockchain forever.'}
           </Text>
+
+          {/* Signature result */}
+          <Collapse in={!!lastSignature} animateOpacity>
+            {lastSignature && (
+              <Box
+                mt={5} p={5}
+                bg="rgba(138, 75, 255, 0.06)" borderRadius="xl"
+                border="1px solid" borderColor="rgba(138, 75, 255, 0.2)"
+              >
+                <HStack mb={3}>
+                  <Box
+                    w="24px" h="24px" borderRadius="full"
+                    bg="rgba(138, 75, 255, 0.15)"
+                    display="flex" alignItems="center" justifyContent="center"
+                  >
+                    <Text fontSize="xs" color="purple.300">✓</Text>
+                  </Box>
+                  <Text fontSize="sm" fontWeight="700" color="purple.300">
+                    Message Signed Successfully
+                  </Text>
+                </HStack>
+
+                <VStack align="stretch" spacing={3}>
+                  {/* Message */}
+                  <Box>
+                    <Text fontSize="xs" color="whiteAlpha.400" mb={1} fontWeight="600">
+                      Message:
+                    </Text>
+                    <Code
+                      fontSize="xs" bg="rgba(6, 6, 15, 0.5)"
+                      color="purple.300" fontFamily="mono"
+                      display="block" p={3} borderRadius="lg"
+                      whiteSpace="pre-wrap" wordBreak="break-all"
+                    >
+                      {finalMessage}
+                    </Code>
+                  </Box>
+
+                  {/* Signature */}
+                  <Box>
+                    <Text fontSize="xs" color="whiteAlpha.400" mb={1} fontWeight="600">
+                      Signature:
+                    </Text>
+                    <Code
+                      fontSize="xs" bg="rgba(6, 6, 15, 0.5)"
+                      color="purple.400" fontFamily="mono"
+                      display="block" p={3} borderRadius="lg"
+                      whiteSpace="pre-wrap" wordBreak="break-all"
+                    >
+                      {lastSignature}
+                    </Code>
+                  </Box>
+
+                  {/* Signer address */}
+                  <Box>
+                    <Text fontSize="xs" color="whiteAlpha.400" mb={1} fontWeight="600">
+                      Signed by:
+                    </Text>
+                    <Code
+                      fontSize="xs" bg="rgba(6, 6, 15, 0.5)"
+                      color="purple.300" fontFamily="mono"
+                      display="block" p={3} borderRadius="lg"
+                      wordBreak="break-all"
+                    >
+                      {walletAddress}
+                    </Code>
+                  </Box>
+
+                  <Text fontSize="xs" color="whiteAlpha.300" lineHeight="1.6" pt={2}>
+                    💡 Copy this message + signature to prove you control {walletAddress}. Anyone can verify it using tools like Etherscan's signature verifier.
+                  </Text>
+                </VStack>
+              </Box>
+            )}
+          </Collapse>
 
           {/* Transaction result */}
           <Collapse in={!!lastTxHash} animateOpacity>
