@@ -56,6 +56,8 @@ export interface BlockScoutTxListResponse {
 /**
  * Fetch transactions sent FROM a given address on PulseChain.
  * Returns the raw BlockScout response with pagination support.
+ * 
+ * Throws descriptive errors for better error handling.
  */
 export async function fetchAddressTransactions(
   address: string,
@@ -82,10 +84,20 @@ export async function fetchAddressTransactions(
   }
   
   if (!res.ok) {
-    throw new Error(`BlockScout API error: ${res.status} ${res.statusText}`)
+    if (res.status >= 500) {
+      throw new Error(`BlockScout API is temporarily unavailable (${res.status}). Try again in a moment.`)
+    }
+    if (res.status === 429) {
+      throw new Error('Rate limit exceeded. Please wait a moment before trying again.')
+    }
+    throw new Error(`BlockScout API error (${res.status}): ${res.statusText}`)
   }
 
-  return res.json() as Promise<BlockScoutTxListResponse>
+  try {
+    return await res.json() as BlockScoutTxListResponse
+  } catch (err) {
+    throw new Error('Failed to parse BlockScout API response. The service may be experiencing issues.')
+  }
 }
 
 /* ── Decode + filter ─────────────────────────────────────── */

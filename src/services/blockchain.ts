@@ -72,6 +72,8 @@ export interface TransactionResult {
  *
  * Tries the specified chain first. If not found and no chain was
  * specified, falls back to trying all supported chains.
+ * 
+ * Throws descriptive errors for better error handling.
  */
 export async function fetchTransaction(
   hash: `0x${string}`,
@@ -98,12 +100,24 @@ export async function fetchTransaction(
       }
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err))
+      
+      // If we're only checking one chain, provide more specific error
+      if (chainId) {
+        const chainName = chains[chainId]?.name || `Chain ${chainId}`
+        throw new Error(`Transaction not found on ${chainName}. Verify the hash and network.`)
+      }
+      
       // Transaction not found on this chain — try next
       continue
     }
   }
 
-  throw lastError ?? new Error('Transaction not found on any supported chain')
+  // Exhausted all chains
+  throw new Error(
+    `Transaction not found on any supported chain. ${
+      lastError?.message ? `Last error: ${lastError.message}` : ''
+    }`
+  )
 }
 
 /**

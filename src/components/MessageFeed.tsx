@@ -15,7 +15,6 @@ import {
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
 import { useState, useCallback } from 'react'
-import { isAddress } from 'viem'
 import { useAccount } from 'wagmi'
 import {
   fetchAddressTransactions,
@@ -26,6 +25,7 @@ import { CHAIN_INFO, getCalloutTxUrl, getCalloutAddressUrl } from '../types/call
 import type { Callout } from '../types/callout'
 import { cardStyle } from '../shared/styles'
 import { SectionLabel } from '../shared/SectionLabel'
+import { classifyError, logErrorContext, withRetry, validateAddress } from '../utils/errorHandling'
 
 /* ── Animations ──────────────────────────────────────────────── */
 
@@ -273,8 +273,11 @@ export function MessageFeed() {
 
   const handleSearch = useCallback(async () => {
     const addr = addressInput.trim()
-    if (!isAddress(addr)) {
-      setError('Invalid address. Enter a valid EVM address (0x…).')
+    
+    // Validate address with helpful feedback
+    const validation = validateAddress(addr)
+    if (!validation.isValid) {
+      setError(`${validation.error}. ${validation.suggestion}`)
       return
     }
 
@@ -286,15 +289,29 @@ export function MessageFeed() {
     setIsLoading(true)
 
     try {
-      const data = await fetchAddressTransactions(addr)
+      // Retry logic for network errors
+      const data = await withRetry(
+        async () => fetchAddressTransactions(addr),
+        {
+          maxAttempts: 3,
+          delayMs: 1000,
+          backoff: true,
+        }
+      )
+      
       const decoded = transactionsToCallouts(data.items)
       setCallouts(decoded)
       setNextPage(data.next_page_params)
       setTotalScanned(data.items.length)
     } catch (err) {
-      setError(
-        `Failed to fetch transactions. ${err instanceof Error ? err.message : 'Try again later.'}`,
-      )
+      const errorContext = classifyError(err, {
+        component: 'MessageFeed',
+        address: addr,
+      })
+      
+      logErrorContext(errorContext, 'MessageFeed.handleSearch')
+      
+      setError(`${errorContext.userMessage}: ${errorContext.actionableSteps.join(' • ')}`)
     } finally {
       setIsLoading(false)
     }
@@ -305,15 +322,30 @@ export function MessageFeed() {
     setIsLoadingMore(true)
 
     try {
-      const data = await fetchAddressTransactions(searchedAddress, nextPage)
+      // Retry logic for pagination
+      const data = await withRetry(
+        async () => fetchAddressTransactions(searchedAddress, nextPage),
+        {
+          maxAttempts: 3,
+          delayMs: 1000,
+          backoff: true,
+        }
+      )
+      
       const decoded = transactionsToCallouts(data.items)
       setCallouts((prev) => [...prev, ...decoded])
       setNextPage(data.next_page_params)
       setTotalScanned((prev) => prev + data.items.length)
     } catch (err) {
-      setError(
-        `Failed to load more. ${err instanceof Error ? err.message : 'Try again.'}`,
-      )
+      const errorContext = classifyError(err, {
+        component: 'MessageFeed',
+        action: 'loadMore',
+        address: searchedAddress,
+      })
+      
+      logErrorContext(errorContext, 'MessageFeed.handleLoadMore')
+      
+      setError(`${errorContext.userMessage}: ${errorContext.actionableSteps.join(' • ')}`)
     } finally {
       setIsLoadingMore(false)
     }
