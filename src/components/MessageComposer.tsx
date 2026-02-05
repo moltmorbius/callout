@@ -44,6 +44,7 @@ import { EncryptionControls } from './EncryptionControls'
 import { getExplorerTxUrl, networks } from '../config/web3'
 import { cardStyle } from '../shared/styles'
 import { SectionLabel } from '../shared/SectionLabel'
+import { classifyError, logErrorContext, withRetry, validatePublicKey } from '../utils/errorHandling'
 
 const targetGlow = keyframes`
   0%, 100% { box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.3), 0 0 20px rgba(220, 38, 38, 0.06); }
@@ -220,22 +221,48 @@ export function MessageComposer() {
     
     // Encrypt with ECIES if enabled and public key provided
     if (encryptEnabled && encryptPublicKey) {
+      // Validate public key before attempting encryption
+      const validation = validatePublicKey(encryptPublicKey)
+      if (!validation.isValid) {
+        toast({
+          title: '⚠️ Invalid Public Key',
+          description: validation.suggestion || validation.error,
+          status: 'warning',
+          duration: 6000,
+          isClosable: true,
+        })
+        setCalldata(undefined)
+        return
+      }
+
       let cancelled = false
       encryptMessage(finalMessage, encryptPublicKey)
         .then((encryptedHex) => {
           // Raw ECIES output already in hex, just add 0x prefix
           if (!cancelled) setCalldata(`0x${encryptedHex}` as `0x${string}`)
         })
-        .catch(() => {
+        .catch((err) => {
           // Encryption failed — clear calldata so stale data isn't sent
-          if (!cancelled) setCalldata(undefined)
+          if (!cancelled) {
+            setCalldata(undefined)
+            const errorContext = classifyError(err, { component: 'MessageComposer.encryption' })
+            logErrorContext(errorContext, 'MessageComposer.encryptMessage')
+            
+            toast({
+              title: '⚠️ Encryption Failed',
+              description: errorContext.actionableSteps.join(' • '),
+              status: 'error',
+              duration: 6000,
+              isClosable: true,
+            })
+          }
         })
       return () => { cancelled = true }
     } else {
       // No encryption - encode as UTF-8 hex
       setCalldata(encodeMessage(finalMessage))
     }
-  }, [finalMessage, encryptEnabled, encryptPublicKey])
+  }, [finalMessage, encryptEnabled, encryptPublicKey, toast])
 
   const isValidTarget = targetAddress ? isAddress(targetAddress) : false
 
@@ -258,32 +285,54 @@ export function MessageComposer() {
 
     setIsSending(true)
     try {
-      const hash = await sendTransactionAsync({
-        to: targetAddress as Address,
-        data: calldata,
-        value: parseEther('0'),
-      })
+      // Wrap transaction in retry logic for transient errors
+      const hash = await withRetry(
+        async () => {
+          return await sendTransactionAsync({
+            to: targetAddress as Address,
+            data: calldata,
+            value: parseEther('0'),
+          })
+        },
+        {
+          maxAttempts: 2, // Only retry once for wallet operations
+          delayMs: 1000,
+          shouldRetry: (errCtx) => {
+            // Only retry network errors, not user rejections
+            return errCtx.isRetryable && errCtx.category === 'NETWORK'
+          },
+        }
+      )
+      
       setLastTxHash(hash)
       toast({
-        title: 'Message Sent On-Chain',
+        title: '✓ Message Sent On-Chain',
         description: `Tx: ${hash.slice(0, 14)}...`,
         status: 'success',
         duration: 10000,
         isClosable: true,
       })
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Transaction failed'
+      const errorContext = classifyError(err, {
+        component: 'MessageComposer',
+        targetAddress,
+        chainId,
+      })
+      
+      logErrorContext(errorContext, 'MessageComposer.handleSend')
+      
+      // Show user-friendly error with actionable steps
       toast({
-        title: 'Transaction Failed',
-        description: errorMessage,
+        title: `⚠️ ${errorContext.userMessage}`,
+        description: errorContext.actionableSteps.join(' • '),
         status: 'error',
-        duration: 5000,
+        duration: 8000,
         isClosable: true,
       })
     } finally {
       setIsSending(false)
     }
-  }, [isValidTarget, calldata, targetAddress, sendTransactionAsync, toast])
+  }, [isValidTarget, calldata, targetAddress, chainId, sendTransactionAsync, toast])
 
   // ── Handlers ─────────────────────────────────────────────────────
 

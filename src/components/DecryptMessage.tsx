@@ -18,6 +18,7 @@ import { decryptMessage, isEncrypted } from '../utils/encryption'
 import { fetchTransaction, isTxHash } from '../services/blockchain'
 import { CHAIN_INFO } from '../types/callout'
 import { cardStyle } from '../shared/styles'
+import { classifyError, logErrorContext, withRetry, validateTxHash } from '../utils/errorHandling'
 
 /* ── keyframe animations ───────────────────────────────── */
 
@@ -119,14 +120,32 @@ export function DecryptMessage() {
     setDecryptedMessage(null)
     setTxMeta(null)
     setShowResult(false)
+
+    // Validate transaction hash format if applicable
+    if (inputIsTxHash) {
+      const validation = validateTxHash(inputTrimmed)
+      if (!validation.isValid) {
+        setError(`${validation.error}. ${validation.suggestion}`)
+        return
+      }
+    }
+
     setIsDecoding(true)
 
     try {
       let calldata: string
 
       if (inputIsTxHash) {
-        // Fetch transaction from blockchain RPC
-        const tx = await fetchTransaction(inputTrimmed as `0x${string}`)
+        // Fetch transaction from blockchain RPC with retry logic
+        const tx = await withRetry(
+          async () => fetchTransaction(inputTrimmed as `0x${string}`),
+          {
+            maxAttempts: 3,
+            delayMs: 1500,
+            backoff: true,
+          }
+        )
+        
         calldata = tx.input
         setTxMeta({
           from: tx.from,
@@ -137,7 +156,7 @@ export function DecryptMessage() {
 
         if (!calldata || calldata === '0x') {
           setIsDecoding(false)
-          setError('Transaction has no calldata (empty input). This tx doesn\'t contain a message.')
+          setError('Transaction has no calldata (empty input). This transaction doesn\'t contain a message.')
           return
         }
       } else {
@@ -163,7 +182,7 @@ export function DecryptMessage() {
         if (isEncrypted(decoded)) {
           toast({
             title: '🔒 Encrypted message detected',
-            description: 'Enter the passphrase to unlock.',
+            description: 'Enter the private key to unlock.',
             status: 'info',
             duration: 4000,
           })
@@ -171,13 +190,15 @@ export function DecryptMessage() {
       }, 950)
     } catch (err) {
       setIsDecoding(false)
-      if (inputIsTxHash) {
-        setError(
-          `Could not fetch transaction. ${err instanceof Error ? err.message : 'Check the hash and try again.'}`,
-        )
-      } else {
-        setError('Failed to decode. Make sure the input is valid hex calldata.')
-      }
+      const errorContext = classifyError(err, {
+        component: 'DecryptMessage',
+        inputType: inputIsTxHash ? 'txHash' : 'calldata',
+      })
+      
+      logErrorContext(errorContext, 'DecryptMessage.handleDecode')
+      
+      // Show contextual error message
+      setError(`${errorContext.userMessage}: ${errorContext.actionableSteps.join(' • ')}`)
     }
   }, [inputTrimmed, inputIsTxHash, toast])
 
@@ -190,12 +211,27 @@ export function DecryptMessage() {
       const plain = await decryptMessage(decodedMessage, passphrase)
       setDecryptedMessage(plain)
       toast({
-        title: '🔓 Decrypted!',
+        title: '✓ Decrypted successfully!',
         status: 'success',
         duration: 3000,
       })
-    } catch {
-      setError('Decryption failed. Wrong passphrase or corrupted data.')
+    } catch (err) {
+      const errorContext = classifyError(err, {
+        component: 'DecryptMessage',
+        action: 'decrypt',
+      })
+      
+      logErrorContext(errorContext, 'DecryptMessage.handleDecrypt')
+      
+      setError(`${errorContext.userMessage}: ${errorContext.actionableSteps.join(' • ')}`)
+      
+      toast({
+        title: '⚠️ Decryption Failed',
+        description: errorContext.actionableSteps[0],
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      })
     } finally {
       setIsDecrypting(false)
     }
