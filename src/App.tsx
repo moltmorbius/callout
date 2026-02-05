@@ -24,6 +24,9 @@ const DecryptMessage = lazy(() =>
 const MessageFeed = lazy(() =>
   import('./components/MessageFeed').then((m) => ({ default: m.MessageFeed }))
 )
+const BatchSigner = lazy(() =>
+  import('./components/BatchSigner').then((m) => ({ default: m.BatchSigner }))
+)
 
 const subtlePulse = keyframes`
   0%, 100% { opacity: 0.07; }
@@ -185,6 +188,29 @@ function App() {
                     <Text>Feed</Text>
                   </HStack>
                 </Tab>
+                <Tab
+                  borderRadius="lg"
+                  fontWeight="700"
+                  fontSize="sm"
+                  letterSpacing="0.02em"
+                  color="whiteAlpha.400"
+                  py={2.5}
+                  transition="all 0.2s"
+                  _selected={{
+                    bg: 'rgba(138, 75, 255, 0.1)',
+                    color: 'purple.300',
+                    border: '1px solid',
+                    borderColor: 'rgba(138, 75, 255, 0.25)',
+                  }}
+                  _hover={{
+                    color: 'whiteAlpha.700',
+                  }}
+                >
+                  <HStack spacing={2}>
+                    <Text fontSize="sm">📊</Text>
+                    <Text>Batch</Text>
+                  </HStack>
+                </Tab>
               </TabList>
               <TabPanels>
                 <TabPanel px={0} pt={6}>
@@ -210,6 +236,17 @@ function App() {
                     }
                   >
                     <MessageFeed />
+                  </Suspense>
+                </TabPanel>
+                <TabPanel px={0} pt={6}>
+                  <Suspense
+                    fallback={
+                      <Center py={12}>
+                        <Spinner color="purple.300" size="lg" />
+                      </Center>
+                    }
+                  >
+                    <BatchSigner />
                   </Suspense>
                 </TabPanel>
               </TabPanels>
