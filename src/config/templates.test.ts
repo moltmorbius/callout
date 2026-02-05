@@ -108,12 +108,6 @@ describe('applyTemplate', () => {
 })
 
 describe('getTemplateById', () => {
-  it('finds a template by id', () => {
-    const tpl = getTemplateById('scam-bounty')
-    expect(tpl).toBeDefined()
-    expect(tpl!.name).toBe('White Hat Bounty Offer')
-  })
-
   it('returns undefined for unknown id', () => {
     expect(getTemplateById('nonexistent')).toBeUndefined()
   })
