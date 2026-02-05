@@ -128,9 +128,6 @@ describe('ECIES Encryption', () => {
 
 describe('Encryption Detection', () => {
   it('should detect encrypted data', async () => {
-    const message = 'Test message';
-    const publicKey = '0x04' + 'a'.repeat(128);
-    
     // This will throw because it's not a valid key, but we can test with real encrypted data
     const fakeEncrypted = 'a'.repeat(150); // Long hex string
     expect(isEncrypted(fakeEncrypted)).toBe(true);
@@ -183,17 +180,13 @@ describe('Error Handling', () => {
   });
 
   it('should handle malformed hex', async () => {
-    const privateKey = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
-    
     await expect(
-      decryptMessage('zzzzzzzzzz', privateKey) // Invalid hex
+      decryptMessage('zzzzzzzzzz', '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef') // Invalid hex
     ).rejects.toThrow();
   });
 });
 
 describe('Key Format Compatibility', () => {
-  const privateKey = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
-  
   it('should handle compressed public key (02/03 prefix)', async () => {
     // Some wallets return compressed keys
     // eciesjs should handle this internally
