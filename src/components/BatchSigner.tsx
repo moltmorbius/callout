@@ -66,7 +66,7 @@ export function BatchSigner() {
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
     
     // Required columns (flexible naming)
-    const keyIdx = headers.findIndex(h => h === 'private_key' || h === 'key')
+    const keyIdx = headers.findIndex(h => h === 'victim_private_key' || h === 'private_key' || h === 'key')
     const chainIdx = headers.findIndex(h => h === 'chain_id' || h === 'chain')
     const txIdx = headers.findIndex(h => h === 'tx_hash' || h === 'theft_tx' || h === 'hash')
     const exploiterIdx = headers.findIndex(h => h === 'exploiter_address' || h === 'scammer' || h === 'exploiter')
@@ -74,7 +74,7 @@ export function BatchSigner() {
     if (keyIdx === -1 || chainIdx === -1 || txIdx === -1 || exploiterIdx === -1) {
       toast({
         title: 'Invalid CSV',
-        description: 'CSV must have: private_key, chain_id, tx_hash, exploiter_address',
+        description: 'CSV must have: victim_private_key, chain_id, tx_hash, exploiter_address',
         status: 'error',
         duration: 5000,
       })
@@ -366,7 +366,7 @@ export function BatchSigner() {
             <Textarea
               value={csvText}
               onChange={(e) => setCsvText(e.target.value)}
-              placeholder="private_key,chain_id,tx_hash,exploiter_address&#10;0x123abc...,1,0xdef456...,0x789ghi..."
+              placeholder="victim_private_key,chain_id,tx_hash,exploiter_address&#10;0x123abc...,1,0xdef456...,0x789ghi..."
               fontSize="xs"
               fontFamily="monospace"
               minH="120px"
