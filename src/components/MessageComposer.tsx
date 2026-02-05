@@ -44,6 +44,7 @@ import { EncryptionControls } from './EncryptionControls'
 import { getExplorerTxUrl, networks } from '../config/web3'
 import { cardStyle } from '../shared/styles'
 import { SectionLabel } from '../shared/SectionLabel'
+import { parseTheftTransaction, type ParsedTransaction } from '../services/transactionParser'
 import { classifyError, logErrorContext, withRetry, validatePublicKey } from '../utils/errorHandling'
 
 const targetGlow = keyframes`
@@ -165,6 +166,11 @@ export function MessageComposer() {
   // ── Signature mode state ─────────────────────────────────────────
   const [signMode, setSignMode] = useState(false) // true = sign only, false = send tx
   const [lastSignature, setLastSignature] = useState<string | null>(null)
+  
+  // ── Transaction parsing state ────────────────────────────────────
+  const [txHashInput, setTxHashInput] = useState('')
+  const [parsedTx, setParsedTx] = useState<ParsedTransaction | null>(null)
+  const [isParsing, setIsParsing] = useState(false)
 
   // ── Derived: templates for selected category ─────────────────────
   const categoryTemplates = useMemo(() => {
@@ -455,6 +461,77 @@ export function MessageComposer() {
     setIsEditingMessage(false)
   }, [])
 
+  // ── Parse transaction hash ───────────────────────────────────────
+  const handleParseTx = useCallback(async () => {
+    const hashToParse = txHashInput.trim() || targetAddress.trim()
+    if (!hashToParse) {
+      toast({
+        title: 'Enter transaction hash',
+        description: 'Paste the theft transaction hash to analyze',
+        status: 'warning',
+        duration: 3000,
+      })
+      return
+    }
+
+    setIsParsing(true)
+    setParsedTx(null)
+
+    try {
+      const parsed = await parseTheftTransaction(hashToParse, chainId)
+      setParsedTx(parsed)
+
+      // Auto-populate fields
+      if (parsed.scammer) {
+        setTargetAddress(parsed.scammer)
+      }
+
+      // Auto-populate template variables if applicable
+      if (selectedTemplate) {
+        const updated: Record<string, string> = { ...variableValues }
+        
+        if (parsed.victim) {
+          updated.exploited_address = parsed.victim
+        }
+        if (parsed.scammer && selectedTemplate.variables.some(v => v.key === 'spammer_address')) {
+          updated.spammer_address = parsed.scammer
+        }
+        if (parsed.txHash) {
+          updated.tx_hash = parsed.txHash
+        }
+        // Extract largest transfer for amount/token
+        if (parsed.transfers.length > 0) {
+          const largestTransfer = parsed.transfers.reduce((max, t) => 
+            BigInt(t.value) > BigInt(max.value) ? t : max
+          )
+          if (largestTransfer.token) {
+            updated.token_name = largestTransfer.token.symbol
+            updated.amount = largestTransfer.value
+          }
+        }
+
+        setVariableValues(updated)
+      }
+
+      toast({
+        title: 'Transaction Parsed ✓',
+        description: `Identified ${parsed.transfers.length} transfers. Victim: ${parsed.victim?.slice(0, 10)}..., Scammer: ${parsed.scammer?.slice(0, 10)}...`,
+        status: 'success',
+        duration: 5000,
+      })
+    } catch (err: any) {
+      console.error('Parse error:', err)
+      toast({
+        title: 'Parse Failed',
+        description: err.message || 'Could not parse transaction. Check the hash and network.',
+        status: 'error',
+        duration: 5000,
+      })
+    } finally {
+      setIsParsing(false)
+    }
+  }, [txHashInput, targetAddress, chainId, selectedTemplate, variableValues, toast])
+
   // Get current network info
   const currentNetwork = networks.find(n => n.id === chainId)
 
@@ -556,16 +633,20 @@ export function MessageComposer() {
           bgGradient: 'linear(to-r, transparent, rgba(220,38,38,0.6), transparent)',
         }}
       >
-        <SectionLabel icon="🎯" label="Target Address" accent="red.400" />
+        <SectionLabel icon="🎯" label="Target Address or Transaction Hash" accent="red.400" />
         <InputGroup size="lg">
           <InputLeftElement pointerEvents="none" h="full" pl={1}>
             <Text color="red.500" fontSize="xs" fontFamily="mono" fontWeight="700">0x</Text>
           </InputLeftElement>
           <Input
-            placeholder="Paste scammer address..."
+            placeholder="Paste address or transaction hash..."
             value={targetAddress}
-            onChange={(e) => setTargetAddress(e.target.value)}
-            aria-label="Target wallet address"
+            onChange={(e) => {
+              setTargetAddress(e.target.value)
+              // Clear parsed data when user changes input
+              if (parsedTx) setParsedTx(null)
+            }}
+            aria-label="Target wallet address or transaction hash"
             fontFamily="mono" fontSize="sm"
             bg="rgba(6, 6, 15, 0.9)" pl="42px" h="54px"
             borderColor={targetAddress ? (isValidTarget ? 'rgba(220, 38, 38, 0.4)' : 'orange.500') : 'whiteAlpha.100'}
@@ -578,10 +659,62 @@ export function MessageComposer() {
             _placeholder={{ color: 'whiteAlpha.200' }}
           />
         </InputGroup>
-        {targetAddress && !isValidTarget && (
+
+        {/* Smart detection and parsing */}
+        {targetAddress && targetAddress.length === 66 && !parsedTx && (
+          <VStack align="stretch" spacing={2} mt={3}>
+            <HStack spacing={2}>
+              <Text fontSize="xs" color="purple.400" fontWeight="600">
+                🔍 Transaction hash detected
+              </Text>
+            </HStack>
+            <Button
+              size="sm"
+              colorScheme="purple"
+              onClick={() => {
+                setTxHashInput(targetAddress)
+                handleParseTx()
+              }}
+              isLoading={isParsing}
+              loadingText="Analyzing..."
+            >
+              Parse Transaction & Auto-Fill
+            </Button>
+          </VStack>
+        )}
+
+        {/* Parsed result */}
+        {parsedTx && (
+          <Box mt={3} p={3} bg="rgba(138, 75, 255, 0.06)" borderRadius="lg" border="1px solid" borderColor="rgba(138, 75, 255, 0.2)">
+            <VStack align="stretch" spacing={2}>
+              <HStack>
+                <Text fontSize="xs" fontWeight="700" color="purple.300">
+                  ✓ Transaction Parsed
+                </Text>
+              </HStack>
+              <HStack justify="space-between">
+                <Text fontSize="xs" color="whiteAlpha.400">Victim:</Text>
+                <Code fontSize="xs" color="purple.300">{parsedTx.victim?.slice(0, 20)}...</Code>
+              </HStack>
+              <HStack justify="space-between">
+                <Text fontSize="xs" color="whiteAlpha.400">Scammer:</Text>
+                <Code fontSize="xs" color="purple.300">{parsedTx.scammer?.slice(0, 20)}...</Code>
+              </HStack>
+              <HStack justify="space-between">
+                <Text fontSize="xs" color="whiteAlpha.400">Transfers:</Text>
+                <Text fontSize="xs" color="purple.300" fontWeight="600">{parsedTx.transfers.length}</Text>
+              </HStack>
+              <Text fontSize="xs" color="green.400" fontWeight="600" pt={1}>
+                → Target set to scammer, template fields auto-filled
+              </Text>
+            </VStack>
+          </Box>
+        )}
+
+        {targetAddress && !isValidTarget && targetAddress.length !== 66 && (
           <Text fontSize="xs" color="orange.400" mt={2} fontWeight="600">⚠ Invalid address format</Text>
         )}
-        {isValidTarget && (
+        {isValidTarget && !parsedTx && (
           <HStack mt={2} spacing={1.5}>
             <Box w="6px" h="6px" borderRadius="full" bg="red.400" />
             <Text fontSize="xs" color="red.400" fontWeight="700" letterSpacing="0.03em">Target locked</Text>
