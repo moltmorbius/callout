@@ -9,11 +9,7 @@ import {
   Badge,
   InputGroup,
   InputLeftElement,
-  Switch,
-  FormControl,
-  FormLabel,
   useToast,
-  Tooltip,
   Code,
   Link,
   Collapse,
@@ -43,7 +39,8 @@ import {
   getVariableProgress,
 } from '../utils/templateEngine'
 import { encodeMessage } from '../utils/encoding'
-import { encryptMessage } from '../utils/encryption'
+import { encryptWithPublicKey, encryptWithPassphrase } from '../utils/encryption'
+import { EncryptionControls, type EncryptionMode } from './EncryptionControls'
 import { getExplorerTxUrl, networks } from '../config/web3'
 import { cardStyle } from '../shared/styles'
 import { SectionLabel } from '../shared/SectionLabel'
@@ -152,7 +149,10 @@ export function MessageComposer() {
   const [editedMessage, setEditedMessage] = useState('')
 
   // ── Encryption state ─────────────────────────────────────────────
-  const [encryptEnabled, setEncryptEnabled] = useState(savedState?.encryptEnabled || false)
+  const [encryptionMode, setEncryptionMode] = useState<EncryptionMode>(
+    savedState?.encryptionMode || 'disabled'
+  )
+  const [encryptPublicKey, setEncryptPublicKey] = useState('')
   const [encryptPassphrase, setEncryptPassphrase] = useState('')
 
   // ── TX state ─────────────────────────────────────────────────────
@@ -175,13 +175,13 @@ export function MessageComposer() {
         variableValues,
         isCustomMode,
         customMessage,
-        encryptEnabled,
+        encryptionMode,
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
     } catch {
       // Ignore localStorage errors
     }
-  }, [targetAddress, selectedCategoryId, selectedTemplate, variableValues, isCustomMode, customMessage, encryptEnabled])
+  }, [targetAddress, selectedCategoryId, selectedTemplate, variableValues, isCustomMode, customMessage, encryptionMode])
 
   // Auto-inject wallet address into receive_address ONLY if user hasn't manually cleared it
   useEffect(() => {
@@ -220,9 +220,22 @@ export function MessageComposer() {
       setCalldata(undefined)
       return
     }
-    if (encryptEnabled && encryptPassphrase) {
+    
+    // Handle encryption based on mode
+    if (encryptionMode === 'pubkey' && encryptPublicKey) {
       let cancelled = false
-      encryptMessage(finalMessage, encryptPassphrase)
+      encryptWithPublicKey(finalMessage, encryptPublicKey)
+        .then((encrypted) => {
+          if (!cancelled) setCalldata(encodeMessage(encrypted))
+        })
+        .catch(() => {
+          // Encryption failed — clear calldata so stale data isn't sent
+          if (!cancelled) setCalldata(undefined)
+        })
+      return () => { cancelled = true }
+    } else if (encryptionMode === 'passphrase' && encryptPassphrase) {
+      let cancelled = false
+      encryptWithPassphrase(finalMessage, encryptPassphrase)
         .then((encrypted) => {
           if (!cancelled) setCalldata(encodeMessage(encrypted))
         })
@@ -234,7 +247,7 @@ export function MessageComposer() {
     } else {
       setCalldata(encodeMessage(finalMessage))
     }
-  }, [finalMessage, encryptEnabled, encryptPassphrase])
+  }, [finalMessage, encryptionMode, encryptPublicKey, encryptPassphrase])
 
   const isValidTarget = targetAddress ? isAddress(targetAddress) : false
 
@@ -916,46 +929,14 @@ export function MessageComposer() {
 
       {/* ── Encryption ── */}
       <Box {...cardStyle}>
-        <FormControl display="flex" alignItems="center" mb={encryptEnabled ? 4 : 0}>
-          <HStack flex={1} spacing={2.5}>
-            <Text fontSize="sm" opacity={0.7}>🔒</Text>
-            <FormLabel
-              htmlFor="encrypt-toggle" mb={0}
-              fontSize="11px" fontWeight="800"
-              letterSpacing="0.12em" textTransform="uppercase"
-              color="whiteAlpha.400" cursor="pointer"
-            >
-              Encrypt Message
-            </FormLabel>
-          </HStack>
-          <Tooltip
-            label="Encrypt with a passphrase. Share it separately with the recipient."
-            placement="top" bg="gray.800" color="gray.200"
-            fontSize="xs" borderRadius="lg" px={3} py={2}
-          >
-            <Box>
-              <Switch
-                id="encrypt-toggle"
-                colorScheme="red" size="md"
-                isChecked={encryptEnabled}
-                onChange={(e) => setEncryptEnabled(e.target.checked)}
-              />
-            </Box>
-          </Tooltip>
-        </FormControl>
-        <Collapse in={encryptEnabled} animateOpacity>
-          <Input
-            placeholder="Enter encryption passphrase..."
-            value={encryptPassphrase}
-            onChange={(e) => setEncryptPassphrase(e.target.value)}
-            aria-label="Encryption passphrase"
-            type="password" fontSize="sm"
-            bg="rgba(6, 6, 15, 0.9)"
-            borderColor="whiteAlpha.100"
-            borderRadius="xl" h="46px"
-            _placeholder={{ color: 'whiteAlpha.200' }}
-          />
-        </Collapse>
+        <EncryptionControls
+          mode={encryptionMode}
+          onModeChange={setEncryptionMode}
+          publicKey={encryptPublicKey}
+          onPublicKeyChange={setEncryptPublicKey}
+          passphrase={encryptPassphrase}
+          onPassphraseChange={setEncryptPassphrase}
+        />
       </Box>
 
       {/* ── Preview & Send ── */}
