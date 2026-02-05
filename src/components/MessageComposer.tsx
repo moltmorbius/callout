@@ -22,8 +22,8 @@ import {
 } from '@chakra-ui/react'
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { ComposerConnectButton } from './WalletButton'
-import { useAccount, useEstimateGas, useSendTransaction, useSignMessage, useChainId, useSwitchChain } from 'wagmi'
-import { type Address, isAddress, parseEther } from 'viem'
+import { useAccount, useBalance, useEstimateGas, useSendTransaction, useSignMessage, useChainId, useSwitchChain } from 'wagmi'
+import { type Address, isAddress, parseEther, formatUnits } from 'viem'
 import { keyframes } from '@emotion/react'
 import {
   templateCategories,
@@ -109,6 +109,11 @@ export function MessageComposer() {
   const chainId = useChainId()
   const { switchChain } = useSwitchChain()
   const toast = useToast()
+  
+  // Native token balance
+  const { data: balance } = useBalance({
+    address: walletAddress,
+  })
 
   // Track whether user manually cleared receive_address to prevent auto-inject
   const receiveAddressManuallyCleared = useRef(false)
@@ -1022,20 +1027,47 @@ export function MessageComposer() {
             </Box>
           )}
 
-          {/* Gas estimate (only when sending) */}
-          {!signMode && gasEstimate && (
-            <HStack
-              mb={4} p={3}
-              bg="rgba(6, 6, 15, 0.5)" borderRadius="lg"
-              border="1px solid" borderColor="whiteAlpha.50"
-              spacing={2}
-            >
-              <Text fontSize="xs" color="whiteAlpha.300">⛽</Text>
-              <Text fontSize="xs" color="whiteAlpha.300">Estimated gas:</Text>
-              <Text fontSize="xs" color="whiteAlpha.500" fontFamily="mono" fontWeight="600">
-                {gasEstimate.toString()}
-              </Text>
-            </HStack>
+          {/* Balance & Gas info */}
+          {(balance || (!signMode && gasEstimate)) && (
+            <VStack align="stretch" mb={4} spacing={2}>
+              {/* Native token balance */}
+              {balance && (
+                <HStack
+                  p={3}
+                  bg="rgba(6, 6, 15, 0.5)" borderRadius="lg"
+                  border="1px solid" borderColor="whiteAlpha.50"
+                  spacing={2}
+                  justify="space-between"
+                >
+                  <HStack spacing={2}>
+                    <Text fontSize="xs" color="whiteAlpha.300">💰</Text>
+                    <Text fontSize="xs" color="whiteAlpha.300">Your balance:</Text>
+                  </HStack>
+                  <Text fontSize="xs" color="whiteAlpha.700" fontFamily="mono" fontWeight="600">
+                    {parseFloat(formatUnits(balance.value, balance.decimals)).toFixed(4)} {balance.symbol}
+                  </Text>
+                </HStack>
+              )}
+              
+              {/* Gas estimate (only when sending) */}
+              {!signMode && gasEstimate && (
+                <HStack
+                  p={3}
+                  bg="rgba(6, 6, 15, 0.5)" borderRadius="lg"
+                  border="1px solid" borderColor="whiteAlpha.50"
+                  spacing={2}
+                  justify="space-between"
+                >
+                  <HStack spacing={2}>
+                    <Text fontSize="xs" color="whiteAlpha.300">⛽</Text>
+                    <Text fontSize="xs" color="whiteAlpha.300">Estimated gas:</Text>
+                  </HStack>
+                  <Text fontSize="xs" color="whiteAlpha.500" fontFamily="mono" fontWeight="600">
+                    {gasEstimate.toString()}
+                  </Text>
+                </HStack>
+              )}
+            </VStack>
           )}
 
           {/* Sign mode toggle */}

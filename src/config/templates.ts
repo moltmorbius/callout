@@ -177,9 +177,9 @@ export const messageTemplates: MessageTemplate[] = [
     categoryId: 'scam-recovery',
     emoji: '⚖️',
     template:
-      'NOTICE: Unauthorized transfer of ${amount} ${token_name} from ${exploited_address} has been documented. ' +
+      'NOTICE: Unauthorized transfers from ${exploited_address} have been documented. ' +
       'Blockchain forensics and law enforcement have been engaged. ' +
-      'Return all funds to ${receive_address} immediately. ' +
+      'Return funds (${amount} ${token_name}) to ${receive_address} immediately. ' +
       'Failure to comply will result in legal proceedings. All on-chain evidence is preserved permanently.',
     description: 'Formal legal notice with law enforcement mention',
     variables: [VAR_AMOUNT, VAR_TOKEN_NAME, VAR_EXPLOITED_ADDRESS, VAR_RECEIVE_ADDRESS],
@@ -190,7 +190,7 @@ export const messageTemplates: MessageTemplate[] = [
     categoryId: 'scam-recovery',
     emoji: '⏰',
     template:
-      'FINAL WARNING: Return ${amount} ${token_name} to ${receive_address}${deadline? by ${deadline}}. ' +
+      'FINAL WARNING: Return funds (${amount} ${token_name}) to ${receive_address}${deadline? by ${deadline}}. ' +
       'All collected evidence including transaction traces, wallet clustering data, and exchange deposit records ' +
       'will be submitted to relevant authorities and published publicly. ' +
       'This is your last opportunity to resolve this without escalation.',
