@@ -14,7 +14,7 @@ import {
   useToast,
 } from '@chakra-ui/react'
 import { useState, useCallback } from 'react'
-import { useAccount, useSendTransaction } from 'wagmi'
+import { useAccount, useSendTransaction, useChainId, useSwitchChain } from 'wagmi'
 import { isAddress, type Address } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { cardStyle } from '../shared/styles'
@@ -51,6 +51,8 @@ Signed on chain ID: {chainId}`
 
 export function BatchSigner() {
   const { isConnected } = useAccount()
+  const currentChainId = useChainId()
+  const { switchChainAsync } = useSwitchChain()
   const toast = useToast()
   const [rows, setRows] = useState<BatchRow[]>([])
   const [processing, setProcessing] = useState(false)
@@ -199,35 +201,67 @@ export function BatchSigner() {
     setProcessing(true)
     const updated = [...rows]
 
-    for (let i = 0; i < updated.length; i++) {
-      const row = updated[i]
+    // Group rows by chain ID
+    const chainGroups = new Map<number, typeof updated>()
+    for (const row of updated) {
       if (row.status !== 'signed') continue
+      const group = chainGroups.get(row.chainId) || []
+      group.push(row)
+      chainGroups.set(row.chainId, group)
+    }
 
-      try {
-        // Update status
-        row.status = 'sending'
-        setRows([...updated])
+    // Process each chain group
+    for (const [chainId, chainRows] of chainGroups) {
+      // Check if we need to switch chains
+      if (currentChainId !== chainId) {
+        try {
+          toast({
+            title: 'Switching Network',
+            description: `Switching to chain ID ${chainId}...`,
+            status: 'info',
+            duration: 2000,
+          })
+          await switchChainAsync({ chainId })
+        } catch (err: any) {
+          console.error('Chain switch error:', err)
+          // Mark all rows in this chain as error
+          for (const row of chainRows) {
+            row.status = 'error'
+            row.error = `Chain switch failed: ${err.message || 'User rejected'}`
+          }
+          setRows([...updated])
+          continue // Skip this chain group
+        }
+      }
 
-        // Build callout message: original message + signature proof
-        const calldataMessage = `${row.message}\n\n---\nSIGNATURE: ${row.signature}\nSIGNED BY: ${row.address}`
+      // Send transactions for this chain
+      for (const row of chainRows) {
+        try {
+          // Update status
+          row.status = 'sending'
+          setRows([...updated])
 
-        const calldata = encodeMessage(calldataMessage)
+          // Build callout message: original message + signature proof
+          const calldataMessage = `${row.message}\n\n---\nSIGNATURE: ${row.signature}\nSIGNED BY: ${row.address}`
 
-        // Send to scammer from secure wallet
-        const hash = await sendTransactionAsync({
-          to: row.scammer,
-          data: calldata,
-          value: BigInt(0),
-        })
+          const calldata = encodeMessage(calldataMessage)
 
-        row.sentTxHash = hash
-        row.status = 'sent'
-        setRows([...updated])
-      } catch (err: any) {
-        console.error('Send error:', err)
-        row.status = 'error'
-        row.error = err.message || 'Failed to send'
-        setRows([...updated])
+          // Send to scammer from secure wallet (now on correct chain)
+          const hash = await sendTransactionAsync({
+            to: row.scammer,
+            data: calldata,
+            value: BigInt(0),
+          })
+
+          row.sentTxHash = hash
+          row.status = 'sent'
+          setRows([...updated])
+        } catch (err: any) {
+          console.error('Send error:', err)
+          row.status = 'error'
+          row.error = err.message || 'Failed to send'
+          setRows([...updated])
+        }
       }
     }
 
@@ -238,7 +272,7 @@ export function BatchSigner() {
       status: 'success',
       duration: 3000,
     })
-  }, [rows, isConnected, sendTransactionAsync, toast])
+  }, [rows, isConnected, currentChainId, switchChainAsync, sendTransactionAsync, toast])
 
   return (
     <Box {...cardStyle}>
@@ -304,7 +338,16 @@ export function BatchSigner() {
                     <Td>
                       <Code fontSize="xs">{row.address.slice(0, 10)}...</Code>
                     </Td>
-                    <Td>{row.chainId}</Td>
+                    <Td>
+                      <HStack spacing={1}>
+                        <Text fontSize="xs">{row.chainId}</Text>
+                        {isConnected && currentChainId !== row.chainId && (
+                          <Text fontSize="xs" color="orange.400" title="Will switch chain">
+                            ⚠️
+                          </Text>
+                        )}
+                      </HStack>
+                    </Td>
                     <Td>
                       <Code fontSize="xs">{row.theftTxHash.slice(0, 10)}...</Code>
                     </Td>
@@ -324,6 +367,41 @@ export function BatchSigner() {
                 ))}
               </Tbody>
             </Table>
+          </Box>
+        )}
+
+        {/* Chain Summary */}
+        {rows.length > 0 && isConnected && (
+          <Box p={3} bg="rgba(255, 159, 10, 0.06)" borderRadius="lg" border="1px solid" borderColor="rgba(255, 159, 10, 0.2)">
+            <VStack align="start" spacing={2}>
+              <Text fontSize="xs" fontWeight="700" color="orange.300">
+                ⛓️ Chain Distribution:
+              </Text>
+              {Array.from(new Set(rows.map(r => r.chainId))).map(chainId => {
+                const count = rows.filter(r => r.chainId === chainId).length
+                const isCurrent = chainId === currentChainId
+                return (
+                  <HStack key={chainId} spacing={2}>
+                    <Text fontSize="xs" color={isCurrent ? 'green.400' : 'orange.400'} fontWeight="600">
+                      {isCurrent ? '✓' : '⚠️'} Chain {chainId}:
+                    </Text>
+                    <Text fontSize="xs" color="whiteAlpha.500">
+                      {count} {count === 1 ? 'row' : 'rows'}
+                    </Text>
+                    {!isCurrent && (
+                      <Text fontSize="xs" color="orange.400" fontStyle="italic">
+                        (will prompt to switch)
+                      </Text>
+                    )}
+                  </HStack>
+                )
+              })}
+              {Array.from(new Set(rows.map(r => r.chainId))).length > 1 && (
+                <Text fontSize="xs" color="whiteAlpha.400" fontStyle="italic" mt={1}>
+                  Multiple chains detected. You'll be prompted to switch between batches.
+                </Text>
+              )}
+            </VStack>
           </Box>
         )}
 
