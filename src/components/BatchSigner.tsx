@@ -12,6 +12,7 @@ import {
   Td,
   Code,
   Textarea,
+  Select,
   useToast,
 } from '@chakra-ui/react'
 import { useState, useCallback } from 'react'
@@ -21,6 +22,7 @@ import { privateKeyToAccount } from 'viem/accounts'
 import { cardStyle } from '../shared/styles'
 import { SectionLabel } from '../shared/SectionLabel'
 import { encodeMessage } from '../utils/encoding'
+import { messageTemplates, applyTemplate } from '../config/templates'
 
 interface BatchRow {
   privateKey: string
@@ -28,27 +30,13 @@ interface BatchRow {
   chainId: number
   theftTxHash: string
   scammer: Address
+  templateId?: string
   message?: string
   signature?: string
   sentTxHash?: string
   status: 'pending' | 'signing' | 'signed' | 'sending' | 'sent' | 'error'
   error?: string
 }
-
-const MESSAGE_TEMPLATE = `PROOF OF OWNERSHIP
-
-I am the legitimate owner of address {address}.
-
-This address was exploited in transaction:
-{theftTxHash}
-
-The scammer who controls this address now:
-{scammer}
-
-This message is signed with my private key to prove ownership.
-I am requesting the return of my funds.
-
-Signed on chain ID: {chainId}`
 
 export function BatchSigner() {
   const { isConnected } = useAccount()
@@ -58,6 +46,8 @@ export function BatchSigner() {
   const [rows, setRows] = useState<BatchRow[]>([])
   const [processing, setProcessing] = useState(false)
   const [csvText, setCsvText] = useState('')
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('scam-bounty-simple')
+  const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null)
   const { sendTransactionAsync } = useSendTransaction()
 
   // Parse CSV text into rows
@@ -170,6 +160,25 @@ export function BatchSigner() {
     parseCSV(csvText)
   }, [csvText, parseCSV, toast])
 
+  // Generate interpolated message for a row
+  const generateMessage = useCallback((row: BatchRow, templateId?: string): string => {
+    const template = messageTemplates.find(t => t.id === (templateId || selectedTemplateId))
+    if (!template) {
+      // Fallback to simple message
+      return `PROOF OF OWNERSHIP\n\nI am the legitimate owner of address ${row.address}.\n\nThis address was exploited in transaction:\n${row.theftTxHash}\n\nThe scammer who controls this address now:\n${row.scammer}\n\nThis message is signed with my private key to prove ownership.\nI am requesting the return of my funds.\n\nSigned on chain ID: ${row.chainId}`
+    }
+
+    // Map row data to template variables
+    const variables: Record<string, string> = {
+      exploited_address: row.address,
+      spammer_address: row.scammer,
+      receive_address: row.address, // Default to same address
+      // Note: other variables (amount, token_name, etc.) would need to be in CSV or user-provided
+    }
+
+    return applyTemplate(template.template, variables, template)
+  }, [selectedTemplateId])
+
   // Sign all messages
   const handleSignAll = useCallback(async () => {
     setProcessing(true)
@@ -184,12 +193,8 @@ export function BatchSigner() {
         row.status = 'signing'
         setRows([...updated])
 
-        // Generate message from template
-        const message = MESSAGE_TEMPLATE
-          .replace('{address}', row.address)
-          .replace('{theftTxHash}', row.theftTxHash)
-          .replace('{scammer}', row.scammer)
-          .replace('{chainId}', row.chainId.toString())
+        // Use pre-edited message or generate from template
+        const message = row.message || generateMessage(row, row.templateId)
 
         // Sign with private key from CSV
         const account = privateKeyToAccount(row.privateKey as `0x${string}`)
@@ -215,7 +220,7 @@ export function BatchSigner() {
       status: 'success',
       duration: 3000,
     })
-  }, [rows, toast])
+  }, [rows, generateMessage, toast])
 
   // Send all signed messages
   const handleSendAll = useCallback(async () => {
@@ -381,6 +386,33 @@ export function BatchSigner() {
           </VStack>
         </VStack>
 
+        {/* Template Selection */}
+        {rows.length > 0 && (
+          <VStack align="stretch" spacing={3}>
+            <Text fontSize="xs" fontWeight="700" color="purple.300">
+              📝 Message Template:
+            </Text>
+            <Select
+              value={selectedTemplateId}
+              onChange={(e) => setSelectedTemplateId(e.target.value)}
+              size="sm"
+              bg="rgba(6, 6, 15, 0.5)"
+              borderColor="whiteAlpha.200"
+              _hover={{ borderColor: 'purple.400' }}
+              _focus={{ borderColor: 'purple.400', boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)' }}
+            >
+              {messageTemplates.map(template => (
+                <option key={template.id} value={template.id}>
+                  {template.emoji} {template.name} — {template.description}
+                </option>
+              ))}
+            </Select>
+            <Text fontSize="xs" color="whiteAlpha.500">
+              Click a row below to preview and edit the message for that address
+            </Text>
+          </VStack>
+        )}
+
         {/* Preview Table */}
         {rows.length > 0 && (
           <Box overflowX="auto">
@@ -396,7 +428,13 @@ export function BatchSigner() {
               </Thead>
               <Tbody>
                 {rows.map((row, i) => (
-                  <Tr key={i}>
+                  <Tr 
+                    key={i}
+                    cursor="pointer"
+                    bg={selectedRowIndex === i ? 'rgba(138, 75, 255, 0.1)' : undefined}
+                    _hover={{ bg: 'rgba(138, 75, 255, 0.05)' }}
+                    onClick={() => setSelectedRowIndex(i)}
+                  >
                     <Td>
                       <Code fontSize="xs">{row.address.slice(0, 10)}...</Code>
                     </Td>
@@ -417,18 +455,80 @@ export function BatchSigner() {
                       <Code fontSize="xs">{row.scammer.slice(0, 10)}...</Code>
                     </Td>
                     <Td>
-                      <Text fontSize="xs" color={
-                        row.status === 'sent' ? 'green.400' :
-                        row.status === 'error' ? 'red.400' :
-                        'yellow.400'
-                      }>
-                        {row.status}
-                      </Text>
+                      <HStack spacing={2}>
+                        <Text fontSize="xs" color={
+                          row.status === 'sent' ? 'green.400' :
+                          row.status === 'error' ? 'red.400' :
+                          'yellow.400'
+                        }>
+                          {row.status}
+                        </Text>
+                        {row.message && (
+                          <Text fontSize="xs" color="purple.400" title="Custom message">
+                            ✏️
+                          </Text>
+                        )}
+                      </HStack>
                     </Td>
                   </Tr>
                 ))}
               </Tbody>
             </Table>
+          </Box>
+        )}
+
+        {/* Message Preview / Editor */}
+        {selectedRowIndex !== null && rows[selectedRowIndex] && (
+          <Box p={4} bg="rgba(138, 75, 255, 0.06)" borderRadius="lg" border="1px solid" borderColor="rgba(138, 75, 255, 0.2)">
+            <VStack align="stretch" spacing={3}>
+              <HStack justify="space-between">
+                <Text fontSize="sm" fontWeight="700" color="purple.300">
+                  💬 Message Preview — Row {selectedRowIndex + 1}
+                </Text>
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  colorScheme="purple"
+                  onClick={() => setSelectedRowIndex(null)}
+                >
+                  ✕ Close
+                </Button>
+              </HStack>
+              
+              <Textarea
+                value={rows[selectedRowIndex].message || generateMessage(rows[selectedRowIndex])}
+                onChange={(e) => {
+                  const updated = [...rows]
+                  updated[selectedRowIndex].message = e.target.value
+                  setRows(updated)
+                }}
+                fontSize="xs"
+                fontFamily="monospace"
+                minH="200px"
+                bg="rgba(6, 6, 15, 0.5)"
+                borderColor="whiteAlpha.200"
+                _hover={{ borderColor: 'purple.400' }}
+                _focus={{ borderColor: 'purple.400', boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)' }}
+              />
+              
+              <HStack>
+                <Button
+                  size="sm"
+                  colorScheme="purple"
+                  variant="outline"
+                  onClick={() => {
+                    const updated = [...rows]
+                    updated[selectedRowIndex].message = generateMessage(rows[selectedRowIndex])
+                    setRows(updated)
+                  }}
+                >
+                  🔄 Reset to Template
+                </Button>
+                <Text fontSize="xs" color="whiteAlpha.500">
+                  Edit the message above, then sign when ready
+                </Text>
+              </HStack>
+            </VStack>
           </Box>
         )}
 
