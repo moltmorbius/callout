@@ -162,10 +162,9 @@ export const messageTemplates: MessageTemplate[] = [
     categoryId: 'scam-recovery',
     emoji: '🤝',
     template:
-      'This is a message regarding transaction ${tx_hash}. ' +
-      'We are offering a white hat bounty: return 90% of the funds to ${receive_address} and keep 10% as a legitimate bounty.${deadline? No further action will be pursued if funds are returned by ${deadline}.} This is a good-faith offer.',
-    description: 'Simple bounty offer using tx hash only',
-    variables: [VAR_TX_HASH, VAR_RECEIVE_ADDRESS, VAR_DEADLINE],
+      'We are offering a white hat bounty: return 90% of the funds to ${receive_address} and keep 10% as a legitimate bounty. This is a good-faith offer.',
+    description: 'Simple bounty offer - clean and direct',
+    variables: [VAR_RECEIVE_ADDRESS],
   },
   {
     id: 'scam-bounty',
