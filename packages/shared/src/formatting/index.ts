@@ -2,14 +2,33 @@
  * Shared formatting utilities for addresses, timestamps, and token amounts.
  */
 
+/* ── Time constants (seconds) ─────────────────────────────── */
+
+const SECONDS_PER_MINUTE = 60
+const SECONDS_PER_HOUR = 3_600
+const SECONDS_PER_DAY = 86_400
+const SECONDS_PER_WEEK = 604_800
+
+/* ── Address formatting ───────────────────────────────────── */
+
 /**
- * Truncates an Ethereum address to show first 6 and last 4 characters.
+ * Truncates an Ethereum address for display.
+ *
  * @param addr - The address to truncate
+ * @param prefixChars - Number of leading characters to keep (default: 6, includes "0x")
+ * @param suffixChars - Number of trailing characters to keep (default: 4)
  * @returns Truncated address string (e.g., "0x1234…5678")
  */
-export function truncateAddress(addr: string): string {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
+export function truncateAddress(
+  addr: string,
+  prefixChars: number = 6,
+  suffixChars: number = 4,
+): string {
+  if (addr.length <= prefixChars + suffixChars) return addr
+  return `${addr.slice(0, prefixChars)}…${addr.slice(-suffixChars)}`
 }
+
+/* ── Time formatting ──────────────────────────────────────── */
 
 /**
  * Formats a Unix timestamp as a human-readable "time ago" string.
@@ -20,17 +39,17 @@ export function formatTimeAgo(timestamp: number): string {
   const now = Math.floor(Date.now() / 1000)
   const diff = now - timestamp
 
-  if (diff < 60) return 'just now'
-  if (diff < 3600) {
-    const mins = Math.floor(diff / 60)
+  if (diff < SECONDS_PER_MINUTE) return 'just now'
+  if (diff < SECONDS_PER_HOUR) {
+    const mins = Math.floor(diff / SECONDS_PER_MINUTE)
     return `${mins}m ago`
   }
-  if (diff < 86400) {
-    const hours = Math.floor(diff / 3600)
+  if (diff < SECONDS_PER_DAY) {
+    const hours = Math.floor(diff / SECONDS_PER_HOUR)
     return `${hours}h ago`
   }
-  if (diff < 604800) {
-    const days = Math.floor(diff / 86400)
+  if (diff < SECONDS_PER_WEEK) {
+    const days = Math.floor(diff / SECONDS_PER_DAY)
     return `${days}d ago`
   }
 
@@ -41,6 +60,8 @@ export function formatTimeAgo(timestamp: number): string {
     year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
   })
 }
+
+/* ── Message formatting ───────────────────────────────────── */
 
 /**
  * Truncates a message string to a maximum length, adding ellipsis if needed.
@@ -53,40 +74,47 @@ export function truncateMessage(message: string, maxLength: number = 200): strin
   return message.slice(0, maxLength).trimEnd() + '…'
 }
 
+/* ── Token amount formatting ──────────────────────────────── */
+
+/**
+ * Format a raw integer amount with the given number of decimals.
+ * E.g. formatUnits("1500000000000000000", 18) → "1.5"
+ */
+function formatUnits(value: string, decimals: number): string {
+  const raw = BigInt(value)
+  const divisor = BigInt(10 ** decimals)
+  const wholePart = raw / divisor
+  const fractionalPart = raw % divisor
+  if (fractionalPart === 0n) return wholePart.toString()
+  const fractionalStr = fractionalPart
+    .toString()
+    .padStart(decimals, '0')
+    .replace(/0+$/, '')
+  return `${wholePart}.${fractionalStr}`
+}
+
 /**
  * Formats a token amount for display.
- * Handles native ETH (wei → ether) and various token standards.
+ * Handles native ETH (wei → ether), ERC20, and non-fungible token standards.
  *
  * @param value - The token amount as a string (wei or token units)
- * @param decimals - Number of decimals for the token
+ * @param decimals - Number of decimals for the token (default: 18 for native)
  * @param type - Type of transfer ('native', 'erc20', 'erc721', 'erc1155', 'erc1155-batch')
  * @returns Formatted amount string
  */
 export function formatTokenAmount(
   value: string,
   decimals?: number,
-  type?: string
+  type?: string,
 ): string {
-  if (type === 'native') {
-    // Convert wei to ether: divide by 10^18
-    const wei = BigInt(value)
-    const wholePart = wei / BigInt(10 ** 18)
-    const fractionalPart = wei % BigInt(10 ** 18)
-    if (fractionalPart === 0n) return wholePart.toString()
-    const fractionalStr = fractionalPart.toString().padStart(18, '0').replace(/0+$/, '')
-    return `${wholePart}.${fractionalStr}`
-  }
+  // Non-fungible tokens: value is a token ID or batch indicator, not an amount
   if (type === 'erc721' || type === 'erc1155' || type === 'erc1155-batch') {
-    return value // Token ID or batch indicator, not an amount
+    return value
   }
-  if (decimals !== undefined && decimals > 0) {
-    const raw = BigInt(value)
-    const divisor = BigInt(10 ** decimals)
-    const wholePart = raw / divisor
-    const fractionalPart = raw % divisor
-    if (fractionalPart === 0n) return wholePart.toString()
-    const fractionalStr = fractionalPart.toString().padStart(decimals, '0').replace(/0+$/, '')
-    return `${wholePart}.${fractionalStr}`
-  }
+
+  // Fungible: native or erc20
+  const dec = decimals ?? (type === 'native' ? 18 : 0)
+  if (dec > 0) return formatUnits(value, dec)
+
   return value
 }

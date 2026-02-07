@@ -41,10 +41,16 @@ const NETWORKS: readonly NetworkConfig[] = [
  * Derive an Ethereum address from an uncompressed secp256k1 public key.
  * The public key is expected in the 0x04... uncompressed format (65 bytes / 130 hex chars + 0x prefix).
  * Address = last 20 bytes of keccak256(publicKey x,y coordinates).
+ *
+ * keccak256 returns 0x + 64 hex chars (32 bytes).
+ * We take the last 20 bytes: skip "0x" (2 chars) + first 12 bytes (24 chars) = slice from index 26.
+ * Result: 40 hex chars = 20 bytes = valid Ethereum address.
  */
 export function publicKeyToAddress(publicKey: Hex): Address {
+  // Strip the 04 prefix to get the raw 64-byte x,y coordinates
   const xyCoordinates = `0x${publicKey.slice(4)}` as Hex
   const hash = keccak256(xyCoordinates)
+  // Last 20 bytes of the hash: "0x" prefix (2) + 12 bytes to skip (24) = 26
   return getAddress(`0x${hash.slice(26)}`)
 }
 
