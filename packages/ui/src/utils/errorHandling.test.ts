@@ -3,10 +3,12 @@ import {
   classifyError,
   ErrorCategory,
   withRetry,
+} from '@callout/shared/errors'
+import {
   validateAddress,
   validatePublicKey,
   validateTxHash,
-} from './errorHandling'
+} from '@callout/shared/validation'
 
 describe('Error Classification', () => {
   it('should classify network errors', () => {

@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, 'claude/**']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build @callout/shared
+        run: yarn workspace @callout/shared build
+
+      - name: Build @callout/api
+        run: yarn workspace @callout/api build
+
+      - name: Build @callout/cli
+        run: yarn workspace @callout/cli build
+
+      - name: Type-check @callout/ui
+        run: npx tsc -b packages/ui/tsconfig.app.json
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build @callout/shared (required by tests)
+        run: yarn workspace @callout/shared build
+
+      - name: Run tests
+        run: yarn test

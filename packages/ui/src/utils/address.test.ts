@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isAddress } from 'viem'
+import { isAddress } from '@callout/shared/validation'
 
 /**
  * Tests for Ethereum address validation via viem.

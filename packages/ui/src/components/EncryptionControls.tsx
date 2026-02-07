@@ -19,7 +19,7 @@ import {
   searchTransactionAcrossChains,
   fetchAndRecoverPublicKey,
   publicKeyToAddress,
-} from '../utils/publicKeyRecovery'
+} from '@callout/shared/crypto'
 import { borderRadius, boxShadows, getThemeValue } from '../config/themeTokens'
 import { useThemeTextColor, useThemeBgColor, useAccentTextColor, useAccentBgColor } from '../shared/useThemeColors'
 import { type Hex, type Address, isAddress } from 'viem'
@@ -97,6 +97,7 @@ export function EncryptionControls({
     try {
       const result = await recoverPublicKeyFromAddress({
         address: targetAddress as Address,
+        apiKey: import.meta.env.VITE_ETHERSCAN_API_KEY || '',
         preferredChainId: chainId,
       })
 
@@ -126,7 +127,7 @@ export function EncryptionControls({
     setRecoverySource(null)
 
     try {
-      const found = await searchTransactionAcrossChains(value)
+      const found = await searchTransactionAcrossChains(value, import.meta.env.VITE_ETHERSCAN_API_KEY || '')
       if (!found) {
         setRecoveryError('Transaction not found on any supported network')
         setIsRecovering(false)

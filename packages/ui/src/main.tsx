@@ -9,8 +9,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import theme from './config/theme'
 import { wagmiAdapter } from './config/web3'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { configureLogger } from '@callout/shared/logger'
 import { logError } from './utils/logger'
 import App from './App'
+
+// Configure shared logger for dev mode
+configureLogger({ debug: import.meta.env.DEV })
 
 const queryClient = new QueryClient()
 

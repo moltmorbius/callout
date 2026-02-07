@@ -1,6 +1,6 @@
 import { Box, VStack, HStack, Text } from '@chakra-ui/react'
 import { useThemeTextColor, useAccentTextColor } from '../../../shared/useThemeColors'
-import { type ExtractedTemplateData } from '../../../utils/templateExtraction'
+import { type ExtractedTemplateData } from '@callout/shared/templates'
 
 interface ExtractedOtherFieldsProps {
   extractedData: ExtractedTemplateData | null

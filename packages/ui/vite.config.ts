@@ -8,10 +8,11 @@ import dotenv from 'dotenv'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 
-// Load environment variables - try api/.env first, then root .env
+// Load environment variables - try api/.env first, then monorepo root .env
 const rootDir = dirname(fileURLToPath(import.meta.url))
-const apiEnvPath = join(rootDir, 'api', '.env')
-const rootEnvPath = join(rootDir, '.env')
+const monorepoRoot = join(rootDir, '..', '..')
+const apiEnvPath = join(monorepoRoot, 'packages', 'api', '.env')
+const rootEnvPath = join(monorepoRoot, '.env')
 
 // Try api/.env first (preferred location)
 let envResult = dotenv.config({ path: apiEnvPath })

@@ -1,15 +1,14 @@
 import { VStack } from '@chakra-ui/react'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useToast } from '@chakra-ui/react'
-import { decodeMessage, isLikelyText } from '../utils/encoding'
-import { decryptMessage, isEncrypted } from '../utils/encryption'
+import { decodeMessage, isLikelyText } from '@callout/shared/encoding'
+import { decryptMessage, isEncrypted } from '@callout/shared/encryption'
 import { fetchTransaction, isTxHash } from '../services/blockchain'
-import { classifyError, logErrorContext, withRetry, validateTxHash } from '../utils/errorHandling'
+import { classifyError, withRetry } from '@callout/shared/errors'
+import { validateTxHash } from '@callout/shared/validation'
 import { type Hex, type Address } from 'viem'
-import { parseSignedMessage, recoverAddressFromSignedMessage } from '../utils/signatureRecovery'
-import { identifyTemplate } from '../utils/templateRecognition'
-import { type MessageTemplate } from '../config/templates'
-import { extractTemplateData, type ExtractedTemplateData } from '../utils/templateExtraction'
+import { parseSignedMessage, recoverAddressFromSignedMessage } from '@callout/shared/crypto'
+import { identifyTemplate, type MessageTemplate, extractTemplateData, type ExtractedTemplateData } from '@callout/shared/templates'
 import { parseTheftTransaction, type ParsedTransaction } from '../services/transactionParser'
 import { networks } from '../config/web3'
 import { chains } from '../services/blockchain'
@@ -180,7 +179,7 @@ export function DecryptMessage() {
         inputType: inputIsTxHash ? 'txHash' : 'calldata',
       })
 
-      logErrorContext(errorContext, 'DecryptMessage.handleDecode')
+      errorContext.log( 'DecryptMessage.handleDecode')
 
       // Show contextual error message
       setError(`${errorContext.userMessage}: ${errorContext.actionableSteps.join(' • ')}`)
@@ -294,7 +293,7 @@ export function DecryptMessage() {
         component: 'DecryptMessage',
         action: 'fetchTransaction',
       })
-      logErrorContext(errorContext, 'DecryptMessage.handleFetchTransaction')
+      errorContext.log( 'DecryptMessage.handleFetchTransaction')
 
       const chainId = extractedData.chainId ? parseInt(extractedData.chainId) : (txMeta?.chainId || 1)
 
@@ -354,7 +353,7 @@ export function DecryptMessage() {
         action: 'decrypt',
       })
 
-      logErrorContext(errorContext, 'DecryptMessage.handleDecrypt')
+      errorContext.log( 'DecryptMessage.handleDecrypt')
 
       setError(`${errorContext.userMessage}: ${errorContext.actionableSteps.join(' • ')}`)
 

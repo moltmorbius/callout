@@ -19,7 +19,7 @@ import { colors, boxShadows, getThemeValue } from '../config/themeTokens'
 import { useColorModeValue } from '@chakra-ui/react'
 import { useThemeTextColor, useThemeBgColor, useAccentBgColor, useAccentBorderColor, useAccentTextColor, useRedButtonColors, useYellowEncryptedColors } from '../shared/useThemeColors'
 import { borderRadius } from '../config/themeTokens'
-import { truncateAddress } from '../utils/formatting'
+import { truncateAddress } from '@callout/shared/formatting'
 import { CalloutCard } from './feed/CalloutCard'
 import { useMessageFeed } from './feed/useMessageFeed'
 

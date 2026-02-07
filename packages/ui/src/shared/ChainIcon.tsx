@@ -1,5 +1,5 @@
 import { Image, type ImageProps } from '@chakra-ui/react'
-import { CHAIN_INFO } from '../types/callout'
+import { CHAIN_INFO } from '@callout/shared/types'
 
 interface ChainIconProps extends Omit<ImageProps, 'src' | 'alt'> {
   chainId: number

@@ -6,7 +6,7 @@ import {
   extractVariableKeys,
   getTemplatesByCategory,
   getTemplateById,
-} from './templates'
+} from '@callout/shared/templates'
 
 describe('messageTemplates', () => {
   it('has at least one template', () => {

@@ -1,7 +1,7 @@
 import { Box, VStack, Divider } from '@chakra-ui/react'
 import { useThemeBgColor } from '../../../shared/useThemeColors'
 import { DataRow } from './DataRow'
-import { type ExtractedTemplateData } from '../../../utils/templateExtraction'
+import { type ExtractedTemplateData } from '@callout/shared/templates'
 
 interface ExtractedAddressesProps {
   extractedData: ExtractedTemplateData | null

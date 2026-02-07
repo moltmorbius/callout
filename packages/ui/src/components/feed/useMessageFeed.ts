@@ -4,8 +4,9 @@ import {
   transactionsToCallouts,
   type BlockScoutNextPage,
 } from '../../services/explorer'
-import type { Callout } from '../../types/callout'
-import { classifyError, logErrorContext, withRetry, validateAddress } from '../../utils/errorHandling'
+import type { Callout } from '@callout/shared/types'
+import { classifyError, withRetry } from '@callout/shared/errors'
+import { validateAddress } from '@callout/shared/validation'
 
 /**
  * Hook for managing message feed state and operations.
@@ -59,7 +60,7 @@ export function useMessageFeed() {
         address: addr,
       })
 
-      logErrorContext(errorContext, 'MessageFeed.handleSearch')
+      errorContext.log( 'MessageFeed.handleSearch')
 
       setError(`${errorContext.userMessage}: ${errorContext.actionableSteps.join(' • ')}`)
     } finally {
@@ -93,7 +94,7 @@ export function useMessageFeed() {
         address: searchedAddress,
       })
 
-      logErrorContext(errorContext, 'MessageFeed.handleLoadMore')
+      errorContext.log( 'MessageFeed.handleLoadMore')
 
       setError(`${errorContext.userMessage}: ${errorContext.actionableSteps.join(' • ')}`)
     } finally {

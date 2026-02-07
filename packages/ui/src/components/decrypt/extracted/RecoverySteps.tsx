@@ -5,7 +5,7 @@ import { useColorModeValue } from '@chakra-ui/react'
 import { ChainIcon } from '../../../shared/ChainIcon'
 import { TokenIcon } from '../../../shared/TokenIcon'
 import { type ParsedTransaction } from '../../../services/transactionParser'
-import { type ExtractedTemplateData } from '../../../utils/templateExtraction'
+import { type ExtractedTemplateData } from '@callout/shared/templates'
 import { type RecoveryAmount } from './useRecoveryAmounts'
 
 interface RecoveryStepsProps {

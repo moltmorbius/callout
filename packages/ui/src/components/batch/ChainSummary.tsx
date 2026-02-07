@@ -3,7 +3,7 @@ import { useColorModeValue } from '@chakra-ui/react'
 import { Icon } from '@iconify/react'
 import { borderRadius } from '../../config/themeTokens'
 import { useThemeTextColor, useAccentTextColor } from '../../shared/useThemeColors'
-import { CHAIN_INFO } from '../../types/callout'
+import { CHAIN_INFO } from '@callout/shared/types'
 import { type BatchRow } from './types'
 import { ChainIcon } from '../../shared/ChainIcon'
 

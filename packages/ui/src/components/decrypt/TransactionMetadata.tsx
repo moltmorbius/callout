@@ -3,7 +3,7 @@ import { borderRadius } from '../../config/themeTokens'
 import { useThemeTextColor, useThemeBgColor, useAccentBorderColor, useAccentTextColor, usePurpleMetaColors } from '../../shared/useThemeColors'
 import { useColorModeValue } from '@chakra-ui/react'
 import { getThemeValue, boxShadows } from '../../config/themeTokens'
-import { CHAIN_INFO } from '../../types/callout'
+import { CHAIN_INFO } from '@callout/shared/types'
 import { ChainIcon } from '../../shared/ChainIcon'
 
 interface TransactionMetadataProps {

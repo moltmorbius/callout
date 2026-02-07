@@ -24,7 +24,7 @@ const shimmer = keyframes`
 
 /* ── Helpers ──────────────────────────────────────────────────── */
 
-import { truncateAddress } from '../utils/formatting'
+import { truncateAddress } from '@callout/shared/formatting'
 
 /** Derive a hue from an address for a unique accent color per wallet. */
 function addressToHue(addr: string): number {

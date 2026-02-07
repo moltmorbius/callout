@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   fetchAndRecoverPublicKey,
   searchTransactionAcrossChains,
-} from './publicKeyRecovery';
+} from '@callout/shared/crypto';
 import type { Hex } from 'viem';
 
 describe('Fetch and Recover Public Key', () => {

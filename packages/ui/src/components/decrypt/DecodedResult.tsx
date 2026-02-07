@@ -5,14 +5,13 @@ import { useThemeBgColor, useThemeTextColor, useAccentBgColor, useAccentBorderCo
 import { useColorModeValue, VStack } from '@chakra-ui/react'
 import { getThemeValue, boxShadows } from '../../config/themeTokens'
 import { textReveal } from './animations'
-import { isEncrypted } from '../../utils/encryption'
+import { isEncrypted } from '@callout/shared/encryption'
 import { type Address } from 'viem'
 import { TransactionMetadata } from './TransactionMetadata'
 import { EncryptedPayload } from './EncryptedPayload'
 import { DecryptedResult } from './DecryptedResult'
 import { ExtractedData } from './ExtractedData'
-import { type MessageTemplate } from '../../config/templates'
-import { type ExtractedTemplateData } from '../../utils/templateExtraction'
+import { type MessageTemplate, type ExtractedTemplateData } from '@callout/shared/templates'
 import { type ParsedTransaction } from '../../services/transactionParser'
 
 interface DecodedResultProps {

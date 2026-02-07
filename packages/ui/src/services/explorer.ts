@@ -5,8 +5,8 @@
  * No API key required.
  */
 
-import type { Callout } from '../types/callout'
-import { isLikelyText } from '../utils/encoding'
+import type { Callout } from '@callout/shared/types'
+import { isLikelyText } from '@callout/shared/encoding'
 import { type Hex } from 'viem'
 
 /* ── Constants ───────────────────────────────────────────── */

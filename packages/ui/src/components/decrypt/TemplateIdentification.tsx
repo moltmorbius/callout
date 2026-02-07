@@ -1,7 +1,7 @@
 import { Box, HStack, Text } from '@chakra-ui/react'
 import { borderRadius } from '../../config/themeTokens'
 import { useThemeTextColor, useAccentBorderColor, useThemeBgColor, useAccentTextColor } from '../../shared/useThemeColors'
-import { type MessageTemplate } from '../../config/templates'
+import { type MessageTemplate } from '@callout/shared/templates'
 
 interface TemplateIdentificationProps {
   template: MessageTemplate

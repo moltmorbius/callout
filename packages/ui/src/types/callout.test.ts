@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { CHAIN_INFO, getCalloutTxUrl, getCalloutAddressUrl } from './callout'
+import { CHAIN_INFO, getCalloutTxUrl, getCalloutAddressUrl } from '@callout/shared/types'
 
 describe('CHAIN_INFO', () => {
   it('contains all expected chains', () => {

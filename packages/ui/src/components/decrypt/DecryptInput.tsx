@@ -4,7 +4,7 @@ import { ThemedTextarea } from '../../shared/ThemedTextarea'
 import { borderRadius, boxShadows, getThemeValue } from '../../config/themeTokens'
 import { useThemeTextColor, useThemeBgColor, useAccentBorderColor, useAccentTextColor, useAccentGradient, useBlueBadgeColors, usePurpleBadgeColors, useBlueIconColors } from '../../shared/useThemeColors'
 import { useColorModeValue } from '@chakra-ui/react'
-import { CHAIN_INFO } from '../../types/callout'
+import { CHAIN_INFO } from '@callout/shared/types'
 
 interface DecryptInputProps {
   inputValue: string

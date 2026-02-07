@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { encodeMessage, decodeMessage, isLikelyText } from './encoding'
+import { encodeMessage, decodeMessage, isLikelyText } from '@callout/shared/encoding'
 import { type Hex } from 'viem'
 
 describe('encodeMessage', () => {

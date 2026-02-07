@@ -1,9 +1,8 @@
 import { Box, VStack, HStack, Text, Input } from '@chakra-ui/react'
-import { validateVariable, getVariableProgress, type MessageTemplate } from '../../utils/templateEngine'
+import { validateVariable, getVariableProgress, type MessageTemplate, templateCategories } from '@callout/shared/templates'
 import { borderRadius, boxShadows, getThemeValue } from '../../config/themeTokens'
 import { useColorModeValue } from '@chakra-ui/react'
 import { useThemeTextColor, useThemeBgColor, useCategoryColors, useAccentTextColor } from '../../shared/useThemeColors'
-import { templateCategories } from '../../config/templates'
 
 interface VariableFormProps {
   template: MessageTemplate

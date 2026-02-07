@@ -4,7 +4,7 @@ import { useThemeBgColor, useThemeTextColor } from './useThemeColors'
 import { boxShadows, borderRadius, getThemeValue } from '../config/themeTokens'
 import { useColorModeValue } from '@chakra-ui/react'
 import { ThemedReadOnlyDisplay } from './ThemedReadOnlyDisplay'
-import { decodeMessage } from '../utils/encoding'
+import { decodeMessage } from '@callout/shared/encoding'
 import { type Hex } from 'viem'
 import { useState } from 'react'
 

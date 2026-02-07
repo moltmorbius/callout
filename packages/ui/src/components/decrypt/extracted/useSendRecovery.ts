@@ -4,7 +4,7 @@ import { useSendTransaction } from 'wagmi'
 import { useAppKitAccount } from '@reown/appkit/react'
 import { useToast } from '@chakra-ui/react'
 import { type RecoveryAmount } from './useRecoveryAmounts'
-import { type ExtractedTemplateData } from '../../../utils/templateExtraction'
+import { type ExtractedTemplateData } from '@callout/shared/templates'
 
 /**
  * Hook to handle sending recovery transactions.

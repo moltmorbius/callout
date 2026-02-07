@@ -1,8 +1,8 @@
 import { HStack, Text, Button, Tooltip, VStack } from '@chakra-ui/react'
 import { useThemeBgColor, useThemeTextColor, useAccentTextColor } from '../../../shared/useThemeColors'
 import { borderRadius } from '../../../config/themeTokens'
-import { type MessageTemplate } from '../../../config/templates'
-import { type ParsedSignedMessage } from '../../../utils/signatureRecovery'
+import { type MessageTemplate } from '@callout/shared/templates'
+import { type ParsedSignedMessage } from '@callout/shared/crypto'
 import { type Address } from 'viem'
 
 interface ExtractedDataHeaderProps {

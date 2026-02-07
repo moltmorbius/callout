@@ -15,16 +15,16 @@ const PORT = process.env.PORT || 3001
 // Get directory paths for serving static files
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-// In production: backend runs from api/dist/index.js, frontend is at root/dist/
-// So we go up 2 levels from api/dist/ to root, then into dist/
-const frontendDistPath = join(__dirname, '../../dist')
+// In production: backend runs from packages/api/dist/index.js, frontend is at packages/ui/dist/
+// So we go up 2 levels from packages/api/dist/ to packages/, then into ui/dist/
+const frontendDistPath = join(__dirname, '../../ui/dist')
 
 // Middleware
 app.use(cors())
 app.use(express.json())
 
 // Request logging middleware - only log API routes, skip static files
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   // Only log API handler requests, skip static files and SPA routes
   if (req.path.startsWith('/api')) {
     const timestamp = new Date().toISOString()
@@ -37,7 +37,7 @@ app.use((req, res, next) => {
 })
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({ status: 'ok' })
 })
 
@@ -193,7 +193,7 @@ app.post('/api/parse-transaction', async (req, res) => {
       }
     }
 
-    res.json({
+    return res.json({
       victim,
       scammer,
       transfers,
@@ -203,7 +203,7 @@ app.post('/api/parse-transaction', async (req, res) => {
   } catch (error: any) {
     console.error('Parse error:', error)
     const errorMessage = error?.message || error?.toString() || 'Failed to parse transaction'
-    res.status(500).json({ error: errorMessage })
+    return res.status(500).json({ error: errorMessage })
   }
 })
 

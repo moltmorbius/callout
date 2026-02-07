@@ -4,7 +4,7 @@ import {
   encryptMessage,
   decryptMessage,
   isEncrypted,
-} from './encryption';
+} from '@callout/shared/encryption';
 
 describe('ECIES Encryption', () => {
   // Generate a valid test keypair

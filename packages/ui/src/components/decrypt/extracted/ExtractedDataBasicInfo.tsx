@@ -7,7 +7,7 @@ import { getExplorerAddressUrl } from '../../../config/web3'
 import { ChainIcon } from '../../../shared/ChainIcon'
 import { DataRow } from './DataRow'
 import { type Address } from 'viem'
-import { type ExtractedTemplateData } from '../../../utils/templateExtraction'
+import { type ExtractedTemplateData } from '@callout/shared/templates'
 
 interface ExtractedDataBasicInfoProps {
   extractedData: ExtractedTemplateData | null

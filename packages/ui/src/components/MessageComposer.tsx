@@ -8,16 +8,17 @@ import {
   templateCategories,
   type TemplateCategoryId,
   type MessageTemplate,
-} from '../config/templates'
-import { applyTemplate } from '../utils/templateEngine'
-import { encodeMessage } from '../utils/encoding'
-import { encryptMessage } from '../utils/encryption'
+  applyTemplate,
+} from '@callout/shared/templates'
+import { encodeMessage } from '@callout/shared/encoding'
+import { encryptMessage } from '@callout/shared/encryption'
 import { EncryptionControls } from './EncryptionControls'
 import { useCardStyle } from '../shared/styles'
 import { SectionLabel } from '../shared/SectionLabel'
 import { useThemeTextColor, useAccentBorderColor, useAccentTextColor, useAccentBgColor } from '../shared/useThemeColors'
 import { type ParsedTransaction } from '../services/transactionParser'
-import { classifyError, logErrorContext, withRetry, validatePublicKey } from '../utils/errorHandling'
+import { classifyError, withRetry } from '@callout/shared/errors'
+import { validatePublicKey } from '@callout/shared/validation'
 import { TemplateSelector } from './TemplateSelector'
 import { NetworkSelector } from './composer/NetworkSelector'
 import { TargetAddressInput } from './composer/TargetAddressInput'
@@ -201,7 +202,7 @@ export function MessageComposer() {
         if (!cancelled && encryptionKeyRef.current === currentKey) {
           setEncryptedCalldata(undefined)
           const errorContext = classifyError(err, { component: 'MessageComposer.encryption' })
-          logErrorContext(errorContext, 'MessageComposer.encryptMessage')
+          errorContext.log( 'MessageComposer.encryptMessage')
 
           toast({
             title: '⚠️ Encryption Failed',
@@ -265,7 +266,7 @@ export function MessageComposer() {
         chainId,
       })
 
-      logErrorContext(errorContext, 'MessageComposer.handleSend')
+      errorContext.log( 'MessageComposer.handleSend')
 
       // Show user-friendly error with actionable steps
       toast({

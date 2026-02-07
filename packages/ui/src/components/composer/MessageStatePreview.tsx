@@ -5,7 +5,7 @@ import { boxShadows, borderRadius, getThemeValue } from '../../config/themeToken
 import { useColorModeValue } from '@chakra-ui/react'
 import { ThemedReadOnlyDisplay } from '../../shared/ThemedReadOnlyDisplay'
 import { type Hex } from 'viem'
-import { type MessageTemplate } from '../../config/templates'
+import { type MessageTemplate } from '@callout/shared/templates'
 
 interface MessageStatePreviewProps {
   /** Raw template text (with ${variables}) */

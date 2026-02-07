@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { formatUnits, formatEther, type Address } from 'viem'
 import { type ParsedTransaction, type TransferEvent } from '../../../services/transactionParser'
-import { type ExtractedTemplateData } from '../../../utils/templateExtraction'
+import { type ExtractedTemplateData } from '@callout/shared/templates'
 
 export interface RecoveryAmount {
   token: TransferEvent['token']

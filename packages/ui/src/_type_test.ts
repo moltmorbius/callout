@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // Temporary file to verify the fix for AccentBgVariant type resolution
 // This imports the ACTUAL types from themeTokens after the fix
-import { type AccentColor, type AccentBgVariant, type AccentBorderVariant } from '../config/themeTokens'
+import { type AccentColor, type AccentBgVariant, type AccentBorderVariant } from './config/themeTokens'
 
 // ── Verify the exported types are now strict ────────────────────────
 

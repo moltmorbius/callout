@@ -3,8 +3,8 @@ import { useAccount, useSendTransaction, useChainId, useSwitchChain } from 'wagm
 import { isAddress, type Address, type Hex, recoverMessageAddress } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { useToast } from '@chakra-ui/react'
-import { encodeMessage } from '../../utils/encoding'
-import { messageTemplates, applyTemplate, getTemplateById, type TemplateCategoryId } from '../../config/templates'
+import { encodeMessage } from '@callout/shared/encoding'
+import { messageTemplates, applyTemplate, getTemplateById, type TemplateCategoryId } from '@callout/shared/templates'
 import { type BatchRow, STORAGE_KEY } from './types'
 
 export function useBatchSigner() {

@@ -13,7 +13,7 @@ import {
   getTemplatesByCategory,
   type TemplateCategoryId,
   type MessageTemplate,
-} from '../config/templates'
+} from '@callout/shared/templates'
 import { borderRadius, boxShadows, getThemeValue } from '../config/themeTokens'
 import { useThemeTextColor, useThemeBgColor, useCategoryColors, useAccentBgColor } from '../shared/useThemeColors'
 
