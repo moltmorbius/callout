@@ -1,10 +1,11 @@
 {
-  "name": "callout-api",
-  "version": "1.0.0",
+  "name": "@callout/api",
+  "version": "0.0.1",
   "type": "module",
+  "private": true,
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc -b",
     "start": "node dist/index.js"
   },
   "dependencies": {
@@ -15,8 +16,8 @@
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/cors": "^2.8.17",
-    "@types/node": "^20.10.0",
+    "@types/node": "^24.10.1",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "typescript": "~5.9.3"
   }
 }
