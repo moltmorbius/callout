@@ -16,17 +16,17 @@ describe('Fetch and Recover Public Key', () => {
     const nonExistentTxHash: Hex = '0x0000000000000000000000000000000000000000000000000000000000000000';
     
     await expect(
-      fetchAndRecoverPublicKey(fakeRpcUrl, nonExistentTxHash)
+      fetchAndRecoverPublicKey({ rpcUrl: fakeRpcUrl, txHash: nonExistentTxHash })
     ).rejects.toThrow();
   });
 
   it('should validate transaction hash format', async () => {
     const rpcUrl = 'https://eth.llamarpc.com';
     const invalidHash = 'not-a-valid-hash' as Hex;
-    
+
     // Should eventually throw due to invalid format
     await expect(
-      fetchAndRecoverPublicKey(rpcUrl, invalidHash)
+      fetchAndRecoverPublicKey({ rpcUrl, txHash: invalidHash })
     ).rejects.toThrow();
   });
 
@@ -39,20 +39,11 @@ describe('Search Transaction Across Chains', () => {
     vi.restoreAllMocks();
   });
 
-  it('should return null if VITE_ETHERSCAN_API_KEY is not set', async () => {
-    // Save original env
-    const originalEnv = import.meta.env.VITE_ETHERSCAN_API_KEY;
-    
-    // Temporarily unset
-    import.meta.env.VITE_ETHERSCAN_API_KEY = '';
-    
+  it('should return null if apiKey is empty', async () => {
     const txHash: Hex = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
-    const result = await searchTransactionAcrossChains(txHash);
-    
+    const result = await searchTransactionAcrossChains(txHash, '');
+
     expect(result).toBeNull();
-    
-    // Restore
-    import.meta.env.VITE_ETHERSCAN_API_KEY = originalEnv;
   });
 
   it('should search across configured networks', async () => {
@@ -71,7 +62,7 @@ describe('Search Transaction Across Chains', () => {
       })
     });
 
-    const result = await searchTransactionAcrossChains(txHash);
+    const result = await searchTransactionAcrossChains(txHash, 'test-api-key');
     
     expect(result).toBeTruthy();
     expect(result?.chainId).toBeTruthy();
@@ -93,7 +84,7 @@ describe('Search Transaction Across Chains', () => {
       })
     });
 
-    const result = await searchTransactionAcrossChains(txHash);
+    const result = await searchTransactionAcrossChains(txHash, 'test-api-key');
     
     expect(result).toBeNull();
   });
@@ -104,7 +95,7 @@ describe('Search Transaction Across Chains', () => {
     // Mock network error
     global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
-    const result = await searchTransactionAcrossChains(txHash);
+    const result = await searchTransactionAcrossChains(txHash, 'test-api-key');
     
     // Should return null on error, not throw
     expect(result).toBeNull();
@@ -123,7 +114,7 @@ describe('Search Transaction Across Chains', () => {
       })
     });
 
-    const result = await searchTransactionAcrossChains(txHash);
+    const result = await searchTransactionAcrossChains(txHash, 'test-api-key');
     
     expect(result).toBeNull();
   });
@@ -139,7 +130,7 @@ describe('Search Transaction Across Chains', () => {
       }
     });
 
-    const result = await searchTransactionAcrossChains(txHash);
+    const result = await searchTransactionAcrossChains(txHash, 'test-api-key');
     
     expect(result).toBeNull();
   });
@@ -170,7 +161,7 @@ describe('Search Transaction Across Chains', () => {
       }
     });
 
-    const result = await searchTransactionAcrossChains(txHash);
+    const result = await searchTransactionAcrossChains(txHash, 'test-api-key');
     
     expect(result).toBeTruthy();
     expect(callCount).toBeGreaterThanOrEqual(3); // Should have tried at least 3
@@ -216,7 +207,7 @@ describe('Edge Cases', () => {
 
     for (const hash of malformedHashes) {
       await expect(
-        fetchAndRecoverPublicKey(rpcUrl, hash as Hex)
+        fetchAndRecoverPublicKey({ rpcUrl, txHash: hash as Hex })
       ).rejects.toThrow();
     }
   });
@@ -232,7 +223,7 @@ describe('Edge Cases', () => {
       })
     });
 
-    const result = await searchTransactionAcrossChains(txHash);
+    const result = await searchTransactionAcrossChains(txHash, 'test-api-key');
     
     if (result) {
       expect(result).toHaveProperty('chainId');

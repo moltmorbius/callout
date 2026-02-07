@@ -67,13 +67,10 @@ describe('ECIES Encryption', () => {
     ).rejects.toThrow();
   });
 
-  it('should handle empty string', async () => {
-    const message = '';
-    
-    const encrypted = await encryptMessage(message, testPublicKey);
-    const decrypted = await decryptMessage(encrypted, testPrivateKey);
-    
-    expect(decrypted).toBe(message);
+  it('should reject empty string', async () => {
+    await expect(
+      encryptMessage('', testPublicKey)
+    ).rejects.toThrow('Message cannot be empty');
   });
 
   it('should handle very long messages', async () => {

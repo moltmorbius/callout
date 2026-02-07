@@ -204,7 +204,7 @@ export function MessageFeed() {
             <Text fontSize="xs" color={textExtraMuted}>
               Showing callouts from
             </Text>
-            <Text fontSize="xs" fontFamily="mono" color={redButtonText} fontWeight="600">
+            <Text fontSize="xs" fontFamily="mono" color={redButton.text} fontWeight="600">
               {searchedAddress ? truncateAddress(searchedAddress) : ''}
             </Text>
           </HStack>

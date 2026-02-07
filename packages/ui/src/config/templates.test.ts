@@ -3,6 +3,7 @@ import {
   messageTemplates,
   templateCategories,
   applyTemplate,
+  interpolateTemplate,
   extractVariableKeys,
   getTemplatesByCategory,
   getTemplateById,
@@ -51,26 +52,30 @@ describe('messageTemplates', () => {
   })
 
   it('template variables match placeholders in template string', () => {
+    // bounty_percentage is auto-computed from recovery_percentage, not declared as a variable
+    const computedKeys = ['bounty_percentage']
     for (const tpl of messageTemplates) {
       const placeholderKeys = extractVariableKeys(tpl.template)
       const varKeys = tpl.variables.map((v) => v.key)
       for (const key of placeholderKeys) {
-        expect(varKeys).toContain(key)
+        if (!computedKeys.includes(key)) {
+          expect(varKeys).toContain(key)
+        }
       }
     }
   })
 })
 
-describe('applyTemplate', () => {
+describe('interpolateTemplate', () => {
   it('replaces ${key} with the given value', () => {
     const template = 'Send funds to ${receive_address} immediately.'
-    const result = applyTemplate(template, { receive_address: '0xDeAd...BeEf' })
+    const result = interpolateTemplate(template, { receive_address: '0xDeAd...BeEf' })
     expect(result).toBe('Send funds to 0xDeAd...BeEf immediately.')
   })
 
   it('replaces multiple different placeholders', () => {
     const template = 'From ${exploited_address} stolen ${amount} ${token_name}'
-    const result = applyTemplate(template, {
+    const result = interpolateTemplate(template, {
       exploited_address: '0x1234',
       amount: '100',
       token_name: 'ETH',
@@ -80,30 +85,34 @@ describe('applyTemplate', () => {
 
   it('falls back to [key] when empty string is provided', () => {
     const template = 'Send to ${receive_address}'
-    const result = applyTemplate(template, { receive_address: '' })
+    const result = interpolateTemplate(template, { receive_address: '' })
     expect(result).toBe('Send to [receive_address]')
   })
 
   it('falls back to [key] when variable is missing', () => {
     const template = 'Send to ${receive_address}'
-    const result = applyTemplate(template, {})
+    const result = interpolateTemplate(template, {})
     expect(result).toBe('Send to [receive_address]')
-  })
-
-  it('works with actual templates from the array', () => {
-    const tpl = messageTemplates[0]
-    const values: Record<string, string> = {}
-    for (const v of tpl.variables) {
-      values[v.key] = '0xABCD'
-    }
-    const result = applyTemplate(tpl.template, values)
-    expect(result).not.toMatch(/\[(\w+)\]/)
   })
 
   it('leaves template unchanged if no placeholders', () => {
     const template = 'No placeholder here.'
-    const result = applyTemplate(template, { receive_address: '0x1234' })
+    const result = interpolateTemplate(template, { receive_address: '0x1234' })
     expect(result).toBe('No placeholder here.')
+  })
+})
+
+describe('applyTemplate', () => {
+  it('works with actual MessageTemplate objects from the array', () => {
+    const tpl = messageTemplates[0]!
+    const values: Record<string, string> = {}
+    for (const v of tpl.variables) {
+      // Use appropriate test values based on variable type so auto-computed
+      // fields like bounty_percentage (derived from recovery_percentage) work
+      values[v.key] = v.type === 'number' ? '80' : '0xABCD'
+    }
+    const result = applyTemplate(tpl, values)
+    expect(result).not.toMatch(/\[(\w+)\]/)
   })
 })
 

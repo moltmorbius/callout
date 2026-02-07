@@ -53,7 +53,7 @@ describe('MessageFeed', () => {
     fireEvent.change(input, { target: { value: 'not-an-address' } })
     fireEvent.click(button)
 
-    expect(screen.getByText(/Invalid address/)).toBeInTheDocument()
+    expect(screen.getByText(/Address must start with 0x/)).toBeInTheDocument()
     expect(explorer.fetchAddressTransactions).not.toHaveBeenCalled()
   })
 
@@ -123,7 +123,7 @@ describe('MessageFeed', () => {
     fireEvent.click(button)
 
     await waitFor(() => {
-      expect(screen.getByText(/Failed to fetch transactions/)).toBeInTheDocument()
+      expect(screen.getByText(/An unexpected error occurred/)).toBeInTheDocument()
     })
   })
 
