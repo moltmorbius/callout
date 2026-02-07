@@ -14,6 +14,30 @@ import App from './App'
 
 const queryClient = new QueryClient()
 
+/**
+ * Gets the initial color mode for ColorModeScript.
+ * Checks localStorage for saved preference, otherwise uses system preference.
+ */
+function getInitialColorMode(): 'light' | 'dark' {
+  if (typeof window === 'undefined') return 'dark'
+
+  try {
+    const saved = localStorage.getItem('callout-color-mode-preference')
+    if (saved === 'light' || saved === 'dark') {
+      return saved
+    }
+    if (saved === 'system') {
+      // Use system preference
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+
+  // Default: use system preference
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
 // Catch unhandled promise rejections (e.g. from AppKit network calls)
 // so they don't crash the page on mobile
 window.addEventListener('unhandledrejection', (event) => {
@@ -24,7 +48,7 @@ window.addEventListener('unhandledrejection', (event) => {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+    <ColorModeScript initialColorMode={getInitialColorMode()} />
     <ErrorBoundary>
       <WagmiProvider config={wagmiAdapter.wagmiConfig}>
         <QueryClientProvider client={queryClient}>

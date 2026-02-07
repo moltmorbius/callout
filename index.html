@@ -4,14 +4,17 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Callout — Put scammers on blast. On-chain. Forever.</title>
-    <meta name="description" content="Put scammers on blast. On-chain. Forever. Send messages via transaction calldata to any EVM address." />
+    <meta name="brave-theme-color" content="#06060f" />
+    <title>Callout — Send permanent messages. On-chain. Forever.</title>
+    <meta name="description" content="Send permanent messages. On-chain. Forever. Encode messages as calldata and send them to any EVM address." />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
       * { box-sizing: border-box; }
-      
+
+      /* Scrollbar styles - don't set border-radius, let it default to square */
+
       /* Prevent layout shift from scrollbar appearing/disappearing */
       html {
         scrollbar-gutter: stable;
@@ -20,46 +23,89 @@
         scrollbar-width: thin;
         scrollbar-color: #1e1e42 #06060f;
       }
-      
+      html::-webkit-scrollbar {
+        display: block;
+        width: 8px;
+        height: 8px;
+      }
+      html::-webkit-scrollbar-track {
+        background-color: #06060f;
+      }
+      html::-webkit-scrollbar-thumb {
+        background-color: #1e1e42;
+      }
+      html::-webkit-scrollbar-thumb:hover {
+        background-color: #2d2d5e;
+      }
+      html::-webkit-scrollbar-thumb:active {
+        background-color: #3a2a4e;
+      }
+
       body {
         margin: 0;
-        background: #06060f;
+        /* background: #06060f; */
         color: #e2e8f0;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       }
-      
-      /* Custom scrollbar — Chrome/Safari/Edge */
-      ::-webkit-scrollbar {
+      body::-webkit-scrollbar,
+      body::-webkit-scrollbar-track,
+      body::-webkit-scrollbar-thumb,
+      body::-webkit-scrollbar-corner {
+        border-radius: 0 !important;
+        -webkit-border-radius: 0 !important;
+        border-top-left-radius: 0 !important;
+        border-top-right-radius: 0 !important;
+        border-bottom-left-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+      }
+      body::-webkit-scrollbar-thumb:hover,
+      body::-webkit-scrollbar-thumb:active {
+        border-radius: 0 !important;
+        -webkit-border-radius: 0 !important;
+        border-top-left-radius: 0 !important;
+        border-top-right-radius: 0 !important;
+        border-bottom-left-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+      }
+
+      /* Custom scrollbar class — can be applied to any scrollable div */
+      .custom-scrollbar {
+        /* Firefox scrollbar */
+        scrollbar-width: thin;
+        /* scrollbar-color: #1e1e42 #06060f; */
+      }
+
+      /* Chrome/Safari/Edge scrollbar */
+      .custom-scrollbar::-webkit-scrollbar {
+        display: block;
         width: 8px;
-        background: #06060f;
+        height: 8px;
       }
-      ::-webkit-scrollbar-track {
-        background: #06060f;
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background-color: #06060f;
       }
-      ::-webkit-scrollbar-thumb {
-        background: #1e1e42;
-        border-radius: 4px;
-        border: 2px solid #06060f;
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #1e1e42;
       }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #2d2d5e;
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: #2d2d5e;
       }
-      ::-webkit-scrollbar-thumb:active {
-        background: #3a2a4e;
+      .custom-scrollbar::-webkit-scrollbar-thumb:active {
+        background-color: #3a2a4e;
       }
-      
+
       /* Pulse animation for send button */
       @keyframes pulse-glow {
         0%, 100% { box-shadow: 0 0 20px rgba(220, 38, 38, 0.3); }
         50% { box-shadow: 0 0 40px rgba(220, 38, 38, 0.6); }
       }
-      
+
       /* Scan line animation for decrypt */
       @keyframes scan-line {
         0% { transform: translateY(-100%); }
         100% { transform: translateY(100%); }
       }
-      
+
       /* Subtle gradient animation */
       @keyframes gradient-shift {
         0%, 100% { background-position: 0% 50%; }

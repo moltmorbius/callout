@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState, useEffect, useCallback } from 'react'
 import {
   Box,
   Container,
@@ -10,13 +10,18 @@ import {
   Text,
   VStack,
   HStack,
-  Flex,
   Spinner,
   Center,
+  useColorModeValue,
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
 import { Header } from './components/Header'
+import { Footer } from './components/Footer'
 import { MessageComposer } from './components/MessageComposer'
+import { colors, boxShadows, gradients, getThemeValue } from './config/themeTokens'
+import { useAccentTextColor } from './shared/useThemeColors'
+
+const TAB_STORAGE_KEY = 'callout-tab-state'
 
 const DecryptMessage = lazy(() =>
   import('./components/DecryptMessage').then((m) => ({ default: m.DecryptMessage }))
@@ -27,6 +32,9 @@ const MessageFeed = lazy(() =>
 const BatchSigner = lazy(() =>
   import('./components/BatchSigner').then((m) => ({ default: m.BatchSigner }))
 )
+const TransactionParser = lazy(() =>
+  import('./components/TransactionParser').then((m) => ({ default: m.TransactionParser }))
+)
 
 const subtlePulse = keyframes`
   0%, 100% { opacity: 0.07; }
@@ -34,8 +42,120 @@ const subtlePulse = keyframes`
 `
 
 function App() {
+  const orangeTabSelectedBg = useColorModeValue('rgba(237, 137, 54, 0.1)', 'rgba(237, 137, 54, 0.1)')
+  const orangeTabSelectedColor = useAccentTextColor('orange')
+  const blueSpinnerColor = useAccentTextColor('blueLight')
+  const greenSpinnerColor = useAccentTextColor('greenLight')
+  const purpleSpinnerColor = useAccentTextColor('purpleLight')
+  const orangeSpinnerColor = useAccentTextColor('orangeLight')
+
+  // Tab selected colors with light/dark variants
+  const redTabSelectedBg = useColorModeValue(
+    getThemeValue(colors.bg.tabSelected.red, 'light'),
+    getThemeValue(colors.bg.tabSelected.red, 'dark')
+  )
+  const redTabSelectedColor = useColorModeValue(
+    getThemeValue(colors.text.tabSelected.red, 'light'),
+    getThemeValue(colors.text.tabSelected.red, 'dark')
+  )
+  const blueTabSelectedBg = useColorModeValue(
+    getThemeValue(colors.bg.tabSelected.blue, 'light'),
+    getThemeValue(colors.bg.tabSelected.blue, 'dark')
+  )
+  const blueTabSelectedColor = useColorModeValue(
+    getThemeValue(colors.text.tabSelected.blue, 'light'),
+    getThemeValue(colors.text.tabSelected.blue, 'dark')
+  )
+  const greenTabSelectedBg = useColorModeValue(
+    getThemeValue(colors.bg.tabSelected.green, 'light'),
+    getThemeValue(colors.bg.tabSelected.green, 'dark')
+  )
+  const greenTabSelectedColor = useColorModeValue(
+    getThemeValue(colors.text.tabSelected.green, 'light'),
+    getThemeValue(colors.text.tabSelected.green, 'dark')
+  )
+  const purpleTabSelectedBg = useColorModeValue(
+    getThemeValue(colors.bg.tabSelected.purple, 'light'),
+    getThemeValue(colors.bg.tabSelected.purple, 'dark')
+  )
+  const purpleTabSelectedColor = useColorModeValue(
+    getThemeValue(colors.text.tabSelected.purple, 'light'),
+    getThemeValue(colors.text.tabSelected.purple, 'dark')
+  )
+  const heroGradient = useColorModeValue(
+    getThemeValue(gradients.hero, 'light'),
+    getThemeValue(gradients.hero, 'dark')
+  )
+  const heroAccentGradient = useColorModeValue(
+    getThemeValue(gradients.heroAccent, 'light'),
+    getThemeValue(gradients.heroAccent, 'dark')
+  )
+
+  // ── Load saved tab index from localStorage ──────────────────────────
+  const loadSavedTabIndex = useCallback(() => {
+    try {
+      const saved = localStorage.getItem(TAB_STORAGE_KEY)
+      if (!saved) return 0
+      const index = parseInt(saved, 10)
+      // Ensure index is valid (0-4 for our 5 tabs)
+      return index >= 0 && index <= 4 ? index : 0
+    } catch {
+      return 0
+    }
+  }, [])
+
+  // ── Tab state ────────────────────────────────────────────────────────
+  const [tabIndex, setTabIndex] = useState(() => loadSavedTabIndex())
+
+  // ── Save tab index to localStorage ──────────────────────────────────
+  useEffect(() => {
+    try {
+      localStorage.setItem(TAB_STORAGE_KEY, String(tabIndex))
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [tabIndex])
+
+  // Theme-aware colors from centralized tokens
+  const bgColor = useColorModeValue(
+    getThemeValue(colors.bg.primary, 'light'),
+    getThemeValue(colors.bg.primary, 'dark')
+  )
+  const topGradient = useColorModeValue(
+    getThemeValue(gradients.backgroundTop, 'light'),
+    getThemeValue(gradients.backgroundTop, 'dark')
+  )
+  const bottomGradient = useColorModeValue(
+    getThemeValue(gradients.backgroundBottom, 'light'),
+    getThemeValue(gradients.backgroundBottom, 'dark')
+  )
+  const tabListBg = useColorModeValue(
+    getThemeValue(colors.bg.tabList, 'light'),
+    getThemeValue(colors.bg.tabList, 'dark')
+  )
+  const tabListBorder = useColorModeValue(
+    getThemeValue(boxShadows.borderTabList, 'light'),
+    getThemeValue(boxShadows.borderTabList, 'dark')
+  )
+  const tabColor = useColorModeValue(
+    getThemeValue(colors.text.tab, 'light'),
+    getThemeValue(colors.text.tab, 'dark')
+  )
+  const tabHoverColor = useColorModeValue(
+    getThemeValue(colors.text.tabHover, 'light'),
+    getThemeValue(colors.text.tabHover, 'dark')
+  )
+  const heroSubtext = useColorModeValue(
+    getThemeValue(colors.text.heroSubtext, 'light'),
+    getThemeValue(colors.text.heroSubtext, 'dark')
+  )
+  const heroText = useColorModeValue(
+    getThemeValue(colors.text.hero, 'light'),
+    getThemeValue(colors.text.hero, 'dark')
+  )
+
   return (
-    <Box minH="100vh" bg="#06060f" position="relative">
+    <Box minH="100vh" bg={bgColor} position="relative">
       {/* Subtle background gradient */}
       <Box
         position="fixed"
@@ -43,10 +163,10 @@ function App() {
         left={0}
         right={0}
         height="700px"
-        bgGradient="radial(ellipse at 50% -20%, rgba(220,38,38,0.08) 0%, transparent 70%)"
+        bgGradient={topGradient}
         pointerEvents="none"
         zIndex={0}
-        animation={`${subtlePulse} 8s ease-in-out infinite`}
+        animation={`${subtlePulse} 3s ease-in-out infinite`}
       />
       {/* Secondary ambient glow */}
       <Box
@@ -55,7 +175,7 @@ function App() {
         left={0}
         right={0}
         height="400px"
-        bgGradient="radial(ellipse at 50% 120%, rgba(99,179,237,0.03) 0%, transparent 70%)"
+        bgGradient={bottomGradient}
         pointerEvents="none"
         zIndex={0}
       />
@@ -63,17 +183,17 @@ function App() {
       <Box position="relative" zIndex={1}>
         <Header />
 
-        <Container maxW="720px" px={{ base: 4, md: 6 }} py={{ base: 6, md: 10 }}>
-          <VStack spacing={{ base: 6, md: 8 }} align="stretch">
+        <Container maxW="720px" px={0} py={{ base: 6, md: 10 }}>
+          <VStack spacing={0} align="stretch">
             {/* Hero */}
-            <Box textAlign="center" pt={{ base: 6, md: 10 }} pb={{ base: 2, md: 4 }}>
+            <Box textAlign="center" pt={{ base: 6, md: 10 }} pb={8}>
               {/* Big CALLOUT wordmark */}
               <Text
                 fontSize={{ base: '4xl', md: '6xl' }}
                 fontWeight="900"
                 letterSpacing={{ base: '0.12em', md: '0.18em' }}
                 textTransform="uppercase"
-                bgGradient="linear(to-r, red.500, red.400, orange.400, red.400)"
+                bgGradient={heroGradient}
                 bgClip="text"
                 lineHeight="1"
                 mb={4}
@@ -87,19 +207,19 @@ function App() {
                 letterSpacing="-0.01em"
                 lineHeight="1.3"
                 mb={4}
-                color="whiteAlpha.800"
+                color={heroText}
               >
-                Put scammers on blast.{' '}
+                Send permanent messages.{' '}
                 <Box
                   as="span"
-                  bgGradient="linear(to-r, red.400, orange.300)"
+                  bgGradient={heroAccentGradient}
                   bgClip="text"
                 >
                   On-chain. Forever.
                 </Box>
               </Text>
               <Text
-                color="whiteAlpha.350"
+                color={heroSubtext}
                 fontSize={{ base: 'sm', md: 'md' }}
                 maxW="480px"
                 mx="auto"
@@ -111,53 +231,51 @@ function App() {
             </Box>
 
             {/* Tabs */}
-            <Tabs variant="unstyled" isFitted>
+            <Tabs variant="unstyled" isFitted index={tabIndex} onChange={setTabIndex}>
               <TabList
-                bg="rgba(14, 14, 30, 0.5)"
-                p="4px"
-                borderRadius="xl"
-                border="1px solid"
-                borderColor="whiteAlpha.50"
+                bg={tabListBg}
+                p={0}
+                borderRadius={0}
+                border="none"
+                boxShadow={tabListBorder}
               >
                 <Tab
-                  borderRadius="lg"
+                  borderRadius={0}
                   fontWeight="700"
                   fontSize="sm"
                   letterSpacing="0.02em"
-                  color="whiteAlpha.400"
+                  color={tabColor}
                   py={2.5}
-                  transition="all 0.2s"
+                  transition="all 0.1s"
                   _selected={{
-                    bg: 'rgba(220, 38, 38, 0.12)',
-                    color: 'red.300',
-                    border: '1px solid',
-                    borderColor: 'rgba(220, 38, 38, 0.25)',
+                    bg: redTabSelectedBg,
+                    color: redTabSelectedColor,
+                    boxShadow: 'none',
                   }}
                   _hover={{
-                    color: 'whiteAlpha.700',
+                    color: tabHoverColor,
                   }}
                 >
                   <HStack spacing={2}>
                     <Text fontSize="sm">📡</Text>
-                    <Text>Send Callout</Text>
+                    <Text>Send</Text>
                   </HStack>
                 </Tab>
                 <Tab
-                  borderRadius="lg"
+                  borderRadius={0}
                   fontWeight="700"
                   fontSize="sm"
                   letterSpacing="0.02em"
-                  color="whiteAlpha.400"
+                  color={tabColor}
                   py={2.5}
-                  transition="all 0.2s"
+                  transition="all 0.1s"
                   _selected={{
-                    bg: 'rgba(99, 179, 237, 0.1)',
-                    color: 'blue.300',
-                    border: '1px solid',
-                    borderColor: 'rgba(99, 179, 237, 0.25)',
+                    bg: blueTabSelectedBg,
+                    color: blueTabSelectedColor,
+                    boxShadow: 'none',
                   }}
                   _hover={{
-                    color: 'whiteAlpha.700',
+                    color: tabHoverColor,
                   }}
                 >
                   <HStack spacing={2}>
@@ -166,21 +284,20 @@ function App() {
                   </HStack>
                 </Tab>
                 <Tab
-                  borderRadius="lg"
+                  borderRadius={0}
                   fontWeight="700"
                   fontSize="sm"
                   letterSpacing="0.02em"
-                  color="whiteAlpha.400"
+                  color={tabColor}
                   py={2.5}
-                  transition="all 0.2s"
+                  transition="all 0.1s"
                   _selected={{
-                    bg: 'rgba(72, 187, 120, 0.1)',
-                    color: 'green.300',
-                    border: '1px solid',
-                    borderColor: 'rgba(72, 187, 120, 0.25)',
+                    bg: greenTabSelectedBg,
+                    color: greenTabSelectedColor,
+                    boxShadow: 'none',
                   }}
                   _hover={{
-                    color: 'whiteAlpha.700',
+                    color: tabHoverColor,
                   }}
                 >
                   <HStack spacing={2}>
@@ -189,21 +306,20 @@ function App() {
                   </HStack>
                 </Tab>
                 <Tab
-                  borderRadius="lg"
+                  borderRadius={0}
                   fontWeight="700"
                   fontSize="sm"
                   letterSpacing="0.02em"
-                  color="whiteAlpha.400"
+                  color={tabColor}
                   py={2.5}
-                  transition="all 0.2s"
+                  transition="all 0.1s"
                   _selected={{
-                    bg: 'rgba(138, 75, 255, 0.1)',
-                    color: 'purple.300',
-                    border: '1px solid',
-                    borderColor: 'rgba(138, 75, 255, 0.25)',
+                    bg: purpleTabSelectedBg,
+                    color: purpleTabSelectedColor,
+                    boxShadow: 'none',
                   }}
                   _hover={{
-                    color: 'whiteAlpha.700',
+                    color: tabHoverColor,
                   }}
                 >
                   <HStack spacing={2}>
@@ -211,92 +327,81 @@ function App() {
                     <Text>Batch</Text>
                   </HStack>
                 </Tab>
+                <Tab
+                  borderRadius={0}
+                  fontWeight="700"
+                  fontSize="sm"
+                  letterSpacing="0.02em"
+                  color={tabColor}
+                  py={2.5}
+                  transition="all 0.1s"
+                  _selected={{
+                    bg: orangeTabSelectedBg,
+                    color: orangeTabSelectedColor,
+                    boxShadow: 'none',
+                  }}
+                  _hover={{
+                    color: tabHoverColor,
+                  }}
+                >
+                  <HStack spacing={2}>
+                    <Text fontSize="sm">🔍</Text>
+                    <Text>Parse</Text>
+                  </HStack>
+                </Tab>
               </TabList>
               <TabPanels>
-                <TabPanel px={0} pt={6}>
+                <TabPanel p={0}>
                   <MessageComposer />
                 </TabPanel>
-                <TabPanel px={0} pt={6}>
+                <TabPanel p={0}>
                   <Suspense
                     fallback={
                       <Center py={12}>
-                        <Spinner color="blue.300" size="lg" />
+                        <Spinner color={blueSpinnerColor} size="lg" />
                       </Center>
                     }
                   >
                     <DecryptMessage />
                   </Suspense>
                 </TabPanel>
-                <TabPanel px={0} pt={6}>
+                <TabPanel p={0}>
                   <Suspense
                     fallback={
                       <Center py={12}>
-                        <Spinner color="green.300" size="lg" />
+                        <Spinner color={greenSpinnerColor} size="lg" />
                       </Center>
                     }
                   >
                     <MessageFeed />
                   </Suspense>
                 </TabPanel>
-                <TabPanel px={0} pt={6}>
+                <TabPanel p={0}>
                   <Suspense
                     fallback={
                       <Center py={12}>
-                        <Spinner color="purple.300" size="lg" />
+                        <Spinner color={purpleSpinnerColor} size="lg" />
                       </Center>
                     }
                   >
                     <BatchSigner />
                   </Suspense>
                 </TabPanel>
+                <TabPanel p={0}>
+                  <Suspense
+                    fallback={
+                      <Center py={12}>
+                        <Spinner color={orangeSpinnerColor} size="lg" />
+                      </Center>
+                    }
+                  >
+                    <TransactionParser />
+                  </Suspense>
+                </TabPanel>
               </TabPanels>
             </Tabs>
 
-            {/* Footer */}
-            <Box
-              textAlign="center"
-              py={8}
-              mt={4}
-              borderTop="1px solid"
-              borderColor="whiteAlpha.50"
-            >
-              <Flex
-                justify="center"
-                align="center"
-                gap={2}
-                mb={3}
-              >
-                <Box
-                  w="22px"
-                  h="22px"
-                  borderRadius="md"
-                  bg="rgba(220, 38, 38, 0.1)"
-                  border="1px solid"
-                  borderColor="rgba(220, 38, 38, 0.2)"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  fontSize="10px"
-                >
-                  ⊕
-                </Box>
-                <Text
-                  fontSize="xs"
-                  fontWeight="800"
-                  letterSpacing="0.15em"
-                  textTransform="uppercase"
-                  color="whiteAlpha.300"
-                >
-                  callout.city
-                </Text>
-              </Flex>
-              <Text fontSize="xs" color="whiteAlpha.200" lineHeight="1.8">
-                Messages are encoded as UTF-8 hex in transaction calldata. Zero-value transfers only.
-              </Text>
-              <Text fontSize="xs" color="whiteAlpha.100" mt={0.5}>
-                All on-chain data is public and permanent. Act accordingly.
-              </Text>
-            </Box>
+            <Footer />
           </VStack>
         </Container>
       </Box>
