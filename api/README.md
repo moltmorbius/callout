@@ -7,7 +7,7 @@ Backend API for Callout - handles transaction parsing with secure API key storag
 1. Install dependencies:
 ```bash
 cd api
-npm install
+yarn
 ```
 
 2. Create `.env` file:
@@ -25,7 +25,7 @@ Get a free key: https://etherscan.io/apis
 ## Development
 
 ```bash
-npm run dev
+yarn run dev
 ```
 
 API runs on http://localhost:3001
@@ -33,8 +33,8 @@ API runs on http://localhost:3001
 ## Production
 
 ```bash
-npm run build
-npm start
+yarn run build
+yarn start
 ```
 
 ## Endpoints
