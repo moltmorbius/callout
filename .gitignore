@@ -18,6 +18,7 @@ node_modules
 .yarn/.tmp
 dist
 dist-ssr
+packages/*/dist
 *.local
 
 # OpenClaw workspace files (agent runtime only, not project files)
