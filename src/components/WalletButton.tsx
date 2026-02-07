@@ -1,6 +1,8 @@
-import { Box, Button, HStack, Text } from '@chakra-ui/react'
+import { Box, Button, HStack, Text, useColorModeValue } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
 import { useAppKit, useAppKitAccount } from '@reown/appkit/react'
+import { colors, borderRadius, getThemeValue } from '../config/themeTokens'
+import { useThemeTextColor, useThemeBgColor, useAccentBgColor, useAccentShadow, useStatusColor, useAccentGradient } from '../shared/useThemeColors'
 
 /* ── Animations ──────────────────────────────────────────────── */
 
@@ -22,9 +24,7 @@ const shimmer = keyframes`
 
 /* ── Helpers ──────────────────────────────────────────────────── */
 
-function truncateAddress(addr: string): string {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
-}
+import { truncateAddress } from '../utils/formatting'
 
 /** Derive a hue from an address for a unique accent color per wallet. */
 function addressToHue(addr: string): number {
@@ -101,6 +101,37 @@ function ConnectedButton({
   onOpen: () => void
 }) {
   const hue = addressToHue(address)
+  const buttonBg = useThemeBgColor('overlay')
+  const buttonBorder = useThemeBgColor('borderOverlay')
+  const textColor = useThemeTextColor('primary')
+  const chevronColor = useThemeTextColor('muted')
+  const buttonShadow = `0 0 0 1px ${buttonBorder}`
+  const buttonHoverBg = useThemeBgColor('overlayHover')
+  const borderOverlayStrong = useThemeBgColor('borderOverlayStrong')
+  const buttonHoverShadow = useColorModeValue(
+    `0 0 0 1px ${borderOverlayStrong}, 0 4px 20px rgba(0,0,0,0.1), 0 0 20px hsla(${hue}, 70%, 50%, 0.08)`,
+    `0 0 0 1px ${borderOverlayStrong}, 0 4px 20px rgba(0,0,0,0.3), 0 0 20px hsla(${hue}, 70%, 50%, 0.08)`
+  )
+  const buttonActiveBg = useThemeBgColor('overlayActive')
+  const identiconBorder = useThemeBgColor('borderOverlaySubtle')
+  const identiconShadow = useColorModeValue(
+    `0 0 0 2px ${identiconBorder}`,
+    `0 0 0 2px ${identiconBorder}`
+  )
+  const walletIconColor = useThemeBgColor('textOverlay')
+  const statusDotBorder = useColorModeValue(
+    getThemeValue(colors.bg.primary, 'light'),
+    getThemeValue(colors.bg.primary, 'dark')
+  )
+  const statusDotColor = useStatusColor('success')
+  const disconnectShadow = useColorModeValue(
+    `0 0 0 1px ${identiconBorder}`,
+    `0 0 0 1px ${identiconBorder}`
+  )
+  const disconnectHoverShadow = useAccentShadow('red', 'shadow')
+  const disconnectActiveBg = useAccentBgColor('red', 'bgActive')
+  const connectHoverShadow = disconnectHoverShadow
+  const connectActiveBg = disconnectActiveBg
 
   return (
     <Button
@@ -111,22 +142,21 @@ function ConnectedButton({
       h="40px"
       pl="6px"
       pr="10px"
-      borderRadius="xl"
-      bg="rgba(255,255,255,0.04)"
-      border="1px solid"
-      borderColor="rgba(255,255,255,0.08)"
+      borderRadius={borderRadius.none}
+      bg={buttonBg}
+      border="none"
+      boxShadow={buttonShadow}
       position="relative"
       overflow="hidden"
-      transition="all 0.2s ease"
+      transition="all 0.1s ease"
       _hover={{
-        bg: 'rgba(255,255,255,0.07)',
-        borderColor: 'rgba(255,255,255,0.14)',
+        bg: buttonHoverBg,
+        boxShadow: buttonHoverShadow,
         transform: 'translateY(-1px)',
-        boxShadow: `0 4px 20px rgba(0,0,0,0.3), 0 0 20px hsla(${hue}, 70%, 50%, 0.08)`,
       }}
       _active={{
         transform: 'translateY(0)',
-        bg: 'rgba(255,255,255,0.05)',
+        bg: buttonActiveBg,
       }}
     >
       <HStack spacing="8px">
@@ -141,9 +171,10 @@ function ConnectedButton({
             alignItems="center"
             justifyContent="center"
             border="2px solid"
-            borderColor="rgba(255,255,255,0.1)"
+            borderColor={identiconBorder}
+            boxShadow={identiconShadow}
           >
-            <WalletIcon size={13} color="rgba(255,255,255,0.9)" />
+            <WalletIcon size={13} color={walletIconColor} />
           </Box>
           {/* Status dot with pulse ring */}
           <Box position="absolute" bottom="-1px" right="-1px">
@@ -152,9 +183,9 @@ function ConnectedButton({
                 w="10px"
                 h="10px"
                 borderRadius="full"
-                bg="#22c55e"
+                bg={statusDotColor}
                 border="2px solid"
-                borderColor="#06060f"
+                borderColor={statusDotBorder}
                 position="relative"
                 zIndex={1}
               />
@@ -165,7 +196,7 @@ function ConnectedButton({
                 w="8px"
                 h="8px"
                 borderRadius="full"
-                bg="#22c55e"
+                bg={statusDotColor}
                 animation={`${pulseRing} 2s cubic-bezier(0.4, 0, 0.6, 1) infinite`}
               />
             </Box>
@@ -177,14 +208,14 @@ function ConnectedButton({
           fontSize="13px"
           fontWeight="600"
           fontFamily="mono"
-          color="whiteAlpha.800"
+          color={textColor}
           letterSpacing="0.02em"
         >
           {truncateAddress(address)}
         </Text>
 
         {/* Chevron */}
-        <Box color="whiteAlpha.300" ml="-2px">
+        <Box color={chevronColor} ml="-2px">
           <ChevronDownIcon size={12} />
         </Box>
       </HStack>
@@ -195,16 +226,29 @@ function ConnectedButton({
 /* ── Disconnected Button (Header) ────────────────────────────── */
 
 function DisconnectedButton({ onOpen }: { onOpen: () => void }) {
+  const buttonBg = useThemeBgColor('primary')
+  const hoverBg = useAccentBgColor('red', 'bgHover')
+  const borderOverlaySubtle = useThemeBgColor('borderOverlaySubtle')
+  const disconnectShadow = useColorModeValue(
+    `0 0 0 1px ${borderOverlaySubtle}`,
+    `0 0 0 1px ${borderOverlaySubtle}`
+  )
+  const disconnectHoverShadow = useAccentShadow('red', 'shadow')
+  const disconnectActiveBg = useAccentBgColor('red', 'bgActive')
+  const redGradient = useAccentBgColor('red', 'bgGradient')
+  const orangeGradient = useAccentGradient('orange')
+  const redBgButton = useAccentBgColor('red', 'bgButton')
+
   return (
     <Box position="relative">
       {/* Animated gradient border */}
       <Box
         position="absolute"
         inset="-1px"
-        borderRadius="xl"
-        bg="linear-gradient(135deg, rgba(220,38,38,0.6), rgba(251,146,60,0.4), rgba(220,38,38,0.6))"
+        borderRadius={borderRadius.none}
+        bg={`linear-gradient(135deg, ${redGradient}, ${orangeGradient}, ${redGradient})`}
         backgroundSize="200% 200%"
-        animation={`${borderGlow} 2s ease-in-out infinite`}
+        animation={`${borderGlow} 3s ease-in-out infinite`}
         zIndex={0}
       />
       <Button
@@ -213,33 +257,34 @@ function DisconnectedButton({ onOpen }: { onOpen: () => void }) {
         display="flex"
         alignItems="center"
         h="40px"
-        px="16px"
-        borderRadius="xl"
-        bg="#06060f"
+        px="10px"
+        borderRadius={borderRadius.none}
+        bg={buttonBg}
         position="relative"
         zIndex={1}
-        transition="all 0.25s ease"
+        transition="all 0.1s ease"
         _hover={{
-          bg: 'rgba(220,38,38,0.12)',
+          bg: hoverBg,
           transform: 'translateY(-1px)',
-          boxShadow: '0 4px 24px rgba(220,38,38,0.25)',
+          boxShadow: disconnectHoverShadow,
         }}
         _active={{
           transform: 'translateY(0)',
-          bg: 'rgba(220,38,38,0.18)',
+          bg: disconnectActiveBg,
         }}
       >
-        <HStack spacing="8px">
+        <HStack spacing="6px">
           <Box
-            w="24px"
-            h="24px"
-            borderRadius="lg"
-            bg="rgba(220,38,38,0.15)"
+            w="20px"
+            h="20px"
+            borderRadius="full"
+            bg={redBgButton}
             display="flex"
             alignItems="center"
             justifyContent="center"
+            boxShadow={disconnectShadow}
           >
-            <PowerIcon size={13} />
+            <PowerIcon size={11} />
           </Box>
           <Text
             fontSize="13px"
@@ -259,16 +304,26 @@ function DisconnectedButton({ onOpen }: { onOpen: () => void }) {
 /* ── Disconnected CTA (MessageComposer) ──────────────────────── */
 
 function ConnectCTA({ onOpen }: { onOpen: () => void }) {
+  const redGradientSubtle = useAccentBgColor('red', 'bgGradient')
+  // Note: orange doesn't have gradientStrong, using regular gradient
+  const orangeGradientSubtle = useAccentGradient('orange')
+  const redGradientStrong = useAccentBgColor('red', 'bgGradientStrong')
+  const redGradientCTA = useAccentBgColor('red', 'bgGradientCTA')
+  const redShadowStrong = useAccentShadow('red', 'shadowStrong')
+  const redShadowGlow = useAccentShadow('red', 'shadowGlow')
+  const whiteOverlay = useThemeBgColor('whiteOverlay')
+  const whiteOverlayStrong = useThemeBgColor('whiteOverlayStrong')
+
   return (
     <Box position="relative" display="inline-block">
       {/* Outer glow ring */}
       <Box
         position="absolute"
         inset="-2px"
-        borderRadius="2xl"
-        bg="linear-gradient(135deg, rgba(220,38,38,0.5), rgba(251,146,60,0.3), rgba(220,38,38,0.5))"
+        borderRadius={borderRadius.none}
+        bg={`linear-gradient(135deg, ${redGradientSubtle}, ${orangeGradientSubtle}, ${redGradientSubtle})`}
         backgroundSize="200% 200%"
-        animation={`${borderGlow} 2.5s ease-in-out infinite`}
+        animation={`${borderGlow} 3s ease-in-out infinite`}
         filter="blur(1px)"
         zIndex={0}
       />
@@ -280,32 +335,32 @@ function ConnectCTA({ onOpen }: { onOpen: () => void }) {
         justifyContent="center"
         h="56px"
         px="32px"
-        borderRadius="2xl"
-        bg="linear-gradient(135deg, rgba(220,38,38,0.9), rgba(185,28,28,0.95))"
+        borderRadius={borderRadius.none}
+        bg={`linear-gradient(135deg, ${redGradientStrong}, ${redGradientCTA})`}
         position="relative"
         zIndex={1}
-        transition="all 0.25s ease"
+        transition="all 0.1s ease"
         _hover={{
           transform: 'translateY(-2px)',
-          boxShadow: '0 8px 40px rgba(220,38,38,0.35), 0 0 60px rgba(220,38,38,0.12)',
+          boxShadow: `0 8px 40px ${redShadowStrong}, 0 0 60px ${redShadowGlow}`,
         }}
         _active={{
           transform: 'translateY(0)',
-          boxShadow: '0 2px 12px rgba(220,38,38,0.2)',
+          boxShadow: `0 2px 12px ${redShadowStrong}`,
         }}
         _before={{
           content: '""',
           position: 'absolute',
           inset: 0,
-          borderRadius: '2xl',
-          bg: `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%)`,
+          borderRadius: borderRadius.none,
+          bg: `linear-gradient(90deg, transparent 0%, ${whiteOverlay} 50%, transparent 100%)`,
           backgroundSize: '200% 100%',
           animation: `${shimmer} 3s ease-in-out infinite`,
           pointerEvents: 'none',
         }}
       >
         <HStack spacing="10px">
-          <WalletIcon size={20} color="rgba(255,255,255,0.95)" />
+          <WalletIcon size={20} color={whiteOverlayStrong} />
           <Text
             fontSize="15px"
             fontWeight="800"

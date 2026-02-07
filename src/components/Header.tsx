@@ -1,6 +1,10 @@
-import { Box, Flex, Text, HStack } from '@chakra-ui/react'
+import { Box, Flex, Text, HStack, IconButton, useColorModeValue } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
+import { Icon } from '@iconify/react'
 import { HeaderWalletButton } from './WalletButton'
+import { colors as themeColors, boxShadows, gradients, borderRadius, spacing, getThemeValue } from '../config/themeTokens'
+import { useColorModeWithSystem } from '../shared/useColorModeWithSystem'
+import { useThemeBgColor, useAccentBgColor, useAccentBorderColor } from '../shared/useThemeColors'
 
 const pulseGlow = keyframes`
   0%, 100% { box-shadow: 0 0 8px rgba(220, 38, 38, 0.3); }
@@ -8,16 +12,42 @@ const pulseGlow = keyframes`
 `
 
 export function Header() {
+  const { preference, setColorModePreference } = useColorModeWithSystem()
+  const bgColor = useColorModeValue(
+    getThemeValue(themeColors.bg.header, 'light'),
+    getThemeValue(themeColors.bg.header, 'dark')
+  )
+  const borderShadow = useColorModeValue(
+    getThemeValue(boxShadows.borderDivider, 'light'),
+    getThemeValue(boxShadows.borderDivider, 'dark')
+  )
+  const taglineColor = useColorModeValue(
+    getThemeValue(themeColors.text.tagline, 'light'),
+    getThemeValue(themeColors.text.tagline, 'dark')
+  )
+  const iconButtonShadow = useColorModeValue(
+    getThemeValue(boxShadows.borderButton, 'light'),
+    getThemeValue(boxShadows.borderButton, 'dark')
+  )
+  const buttonActiveBg = useAccentBgColor('purple', 'bgMeta')
+  const buttonActiveBorder = useAccentBorderColor('purple', 'borderFocus')
+  const buttonInactiveBg = useThemeBgColor('overlay')
+  const buttonHoverBg = useThemeBgColor('overlayHover')
+  const headerLogoGradient = useColorModeValue(
+    getThemeValue(gradients.headerLogo, 'light'),
+    getThemeValue(gradients.headerLogo, 'dark')
+  )
+
   return (
     <Box
       position="sticky"
       top={0}
       zIndex={100}
-      borderBottom="1px solid"
-      borderColor="whiteAlpha.50"
-      bg="rgba(6, 6, 15, 0.85)"
+      borderBottom="none"
+      boxShadow={borderShadow}
+      bg={bgColor}
       backdropFilter="blur(20px)"
-      px={{ base: 4, md: 6 }}
+      px={{ base: spacing.containerPadding.base, md: spacing.containerPadding.md }}
       py={3}
     >
       <Flex justify="space-between" align="center" maxW="960px" mx="auto">
@@ -26,10 +56,10 @@ export function Header() {
           <Box
             w="40px"
             h="40px"
-            borderRadius="lg"
-            bg="rgba(220, 38, 38, 0.15)"
-            border="1px solid"
-            borderColor="rgba(220, 38, 38, 0.35)"
+            borderRadius={borderRadius.none}
+            bg={themeColors.accent.red.bg}
+            border="none"
+            boxShadow={`0 0 0 1px ${themeColors.accent.red.borderStrong}`}
             display="flex"
             alignItems="center"
             justifyContent="center"
@@ -46,7 +76,7 @@ export function Header() {
               fontWeight="900"
               letterSpacing="0.18em"
               textTransform="uppercase"
-              bgGradient="linear(to-r, red.400, red.300, orange.300)"
+              bgGradient={headerLogoGradient}
               bgClip="text"
               lineHeight="1.2"
             >
@@ -54,7 +84,7 @@ export function Header() {
             </Text>
             <Text
               fontSize="9px"
-              color="whiteAlpha.350"
+              color={taglineColor}
               letterSpacing="0.25em"
               textTransform="uppercase"
               fontWeight="600"
@@ -63,9 +93,52 @@ export function Header() {
             </Text>
           </Box>
         </HStack>
-        <Box flexShrink={0}>
+        <HStack spacing={2} flexShrink={0}>
+          <HStack spacing={0}>
+            <IconButton
+              aria-label="Light mode"
+              icon={<Icon icon="mdi:weather-sunny" width="16px" height="16px" />}
+              onClick={() => setColorModePreference('light')}
+              variant="ghost"
+              size="sm"
+              borderRadius={borderRadius.none}
+              bg={preference === 'light' ? buttonActiveBg : buttonInactiveBg}
+              boxShadow={preference === 'light' ? `0 0 0 1px ${buttonActiveBorder}` : iconButtonShadow}
+              _hover={{
+                bg: preference === 'light' ? buttonActiveBg : buttonHoverBg,
+              }}
+            />
+            <IconButton
+              aria-label="System mode"
+              icon={<Icon icon="mdi:monitor" width="16px" height="16px" />}
+              onClick={() => setColorModePreference('system')}
+              variant="ghost"
+              size="sm"
+              borderRadius={borderRadius.none}
+              bg={preference === 'system' ? buttonActiveBg : buttonInactiveBg}
+              boxShadow={preference === 'system' ? `0 0 0 1px ${buttonActiveBorder}` : iconButtonShadow}
+              ml="1px"
+              _hover={{
+                bg: preference === 'system' ? buttonActiveBg : buttonHoverBg,
+              }}
+            />
+            <IconButton
+              aria-label="Dark mode"
+              icon={<Icon icon="mdi:weather-night" width="16px" height="16px" />}
+              onClick={() => setColorModePreference('dark')}
+              variant="ghost"
+              size="sm"
+              borderRadius={borderRadius.none}
+              bg={preference === 'dark' ? buttonActiveBg : buttonInactiveBg}
+              boxShadow={preference === 'dark' ? `0 0 0 1px ${buttonActiveBorder}` : iconButtonShadow}
+              ml="1px"
+              _hover={{
+                bg: preference === 'dark' ? buttonActiveBg : buttonHoverBg,
+              }}
+            />
+          </HStack>
           <HeaderWalletButton />
-        </Box>
+        </HStack>
       </Flex>
     </Box>
   )

@@ -1,6 +1,34 @@
 import { Component, type ReactNode } from 'react'
-import { Box, Text, Button, VStack, Code } from '@chakra-ui/react'
+import { Box, Text, Button, VStack, Code, useColorModeValue } from '@chakra-ui/react'
 import { logError } from '../utils/logger'
+import { borderRadius, boxShadows, getThemeValue, colors } from '../config/themeTokens'
+import { useAccentTextColor, useAccentBgColor, useAccentBorderColor, useRedButtonColors } from '../shared/useThemeColors'
+
+/**
+ * Button component for ErrorBoundary that can use hooks.
+ * ErrorBoundary must be a class component, so we extract the button to use hooks.
+ */
+function ErrorBoundaryButton() {
+  const redButton = useRedButtonColors()
+  const buttonColor = redButton.text
+
+  return (
+    <Button
+      onClick={() => window.location.reload()}
+      bg={redButton.bg}
+      color={redButton.text}
+      border="none"
+      boxShadow={redButton.borderShadow}
+      borderRadius={borderRadius.none}
+      fontWeight="700"
+      _hover={{
+        bg: redButton.hoverBg,
+      }}
+    >
+      Reload Page
+    </Button>
+  )
+}
 
 interface Props {
   children: ReactNode
@@ -29,10 +57,21 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      // Note: ErrorBoundary is a class component, so we can't use hooks directly
+      // We'll use static theme values for dark mode as fallback
+      const bgColor = getThemeValue(colors.bg.primary, 'dark')
+      const textColor = getThemeValue(colors.text.primary, 'dark')
+      const textMuted = getThemeValue(colors.text.muted, 'dark')
+      const textVeryMuted = getThemeValue(colors.text.veryMuted, 'dark')
+      const codeBg = getThemeValue(colors.bg.input, 'dark')
+      const codeText = getThemeValue(colors.text.primary, 'dark')
+      const borderShadow = getThemeValue(boxShadows.borderCard, 'dark')
+      const buttonColor = getThemeValue(colors.text.accent.redLight, 'dark')
+
       return (
         <Box
           minH="100vh"
-          bg="#06060f"
+          bg={bgColor}
           display="flex"
           alignItems="center"
           justifyContent="center"
@@ -43,12 +82,12 @@ export class ErrorBoundary extends Component<Props, State> {
             <Text
               fontSize="xl"
               fontWeight="800"
-              color="red.300"
+              color={buttonColor}
               letterSpacing="0.05em"
             >
               Something went wrong
             </Text>
-            <Text fontSize="sm" color="whiteAlpha.500" lineHeight="1.7">
+            <Text fontSize="sm" color={textMuted} lineHeight="1.7">
               The app encountered an unexpected error. This may be due to a
               network issue or browser incompatibility. Try refreshing the page.
             </Text>
@@ -56,35 +95,23 @@ export class ErrorBoundary extends Component<Props, State> {
               <Code
                 display="block"
                 p={3}
-                borderRadius="lg"
+                borderRadius={borderRadius.none}
                 fontSize="xs"
-                bg="rgba(6, 6, 15, 0.9)"
-                border="1px solid"
-                borderColor="whiteAlpha.100"
-                color="whiteAlpha.400"
+                bg={codeBg}
+                border="none"
+                boxShadow={borderShadow}
+                color={codeText}
                 fontFamily="mono"
                 maxW="100%"
                 overflowX="auto"
                 whiteSpace="pre-wrap"
                 wordBreak="break-all"
+                className="custom-scrollbar"
               >
                 {this.state.error.message}
               </Code>
             )}
-            <Button
-              onClick={() => window.location.reload()}
-              bg="rgba(220, 38, 38, 0.15)"
-              color="red.300"
-              border="1px solid"
-              borderColor="rgba(220, 38, 38, 0.3)"
-              borderRadius="xl"
-              fontWeight="700"
-              _hover={{
-                bg: 'rgba(220, 38, 38, 0.25)',
-              }}
-            >
-              Reload Page
-            </Button>
+            <ErrorBoundaryButton />
           </VStack>
         </Box>
       )

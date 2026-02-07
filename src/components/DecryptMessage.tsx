@@ -1,98 +1,38 @@
-import {
-  Box,
-  VStack,
-  HStack,
-  Text,
-  Input,
-  Textarea,
-  Button,
-  Code,
-  Badge,
-  useToast,
-  Collapse,
-} from '@chakra-ui/react'
-import { keyframes } from '@emotion/react'
+import { VStack } from '@chakra-ui/react'
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { useToast } from '@chakra-ui/react'
 import { decodeMessage, isLikelyText } from '../utils/encoding'
 import { decryptMessage, isEncrypted } from '../utils/encryption'
 import { fetchTransaction, isTxHash } from '../services/blockchain'
-import { CHAIN_INFO } from '../types/callout'
-import { cardStyle } from '../shared/styles'
 import { classifyError, logErrorContext, withRetry, validateTxHash } from '../utils/errorHandling'
-
-/* ── keyframe animations ───────────────────────────────── */
-
-const scanLine = keyframes`
-  0%   { top: 0%; }
-  100% { top: 100%; }
-`
-
-const glowPulse = keyframes`
-  0%, 100% { box-shadow: 0 0 8px rgba(99,179,237,0.15); }
-  50%      { box-shadow: 0 0 20px rgba(99,179,237,0.35), 0 0 40px rgba(99,179,237,0.1); }
-`
-
-const vaultPulse = keyframes`
-  0%, 100% { box-shadow: 0 0 8px rgba(236,201,75,0.1); }
-  50%      { box-shadow: 0 0 24px rgba(236,201,75,0.3), 0 0 48px rgba(236,201,75,0.08); }
-`
-
-const textReveal = keyframes`
-  0%   { opacity: 0; transform: translateY(4px); }
-  100% { opacity: 1; transform: translateY(0); }
-`
-
-/* ── scramble characters for decode animation ──────────── */
-const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*<>{}[]'
-
-function useScrambleText(target: string | null, active: boolean, durationMs = 900) {
-  const [display, setDisplay] = useState<string | null>(null)
-  const frameRef = useRef<number>(0)
-
-  useEffect(() => {
-    if (!active || !target) {
-      if (!active) setDisplay(null)
-      return
-    }
-
-    const len = target.length
-    const start = performance.now()
-
-    const tick = (now: number) => {
-      const elapsed = now - start
-      const progress = Math.min(elapsed / durationMs, 1)
-      const revealed = Math.floor(progress * len)
-
-      let out = ''
-      for (let i = 0; i < len; i++) {
-        if (i < revealed) {
-          out += target[i]
-        } else {
-          out += CHARS[Math.floor(Math.random() * CHARS.length)]
-        }
-      }
-      setDisplay(out)
-
-      if (progress < 1) {
-        frameRef.current = requestAnimationFrame(tick)
-      } else {
-        setDisplay(target)
-      }
-    }
-
-    frameRef.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frameRef.current)
-  }, [target, active, durationMs])
-
-  return display
-}
+import { type Hex, type Address } from 'viem'
+import { parseSignedMessage, recoverAddressFromSignedMessage } from '../utils/signatureRecovery'
+import { identifyTemplate } from '../utils/templateRecognition'
+import { type MessageTemplate } from '../config/templates'
+import { extractTemplateData, type ExtractedTemplateData } from '../utils/templateExtraction'
+import { parseTheftTransaction, type ParsedTransaction } from '../services/transactionParser'
+import { networks } from '../config/web3'
+import { chains } from '../services/blockchain'
+import { DecryptInput } from './decrypt/DecryptInput'
+import { DecryptError } from './decrypt/DecryptError'
+import { DecodingAnimation } from './decrypt/DecodingAnimation'
+import { DecodedResult } from './decrypt/DecodedResult'
 
 /* ── component ─────────────────────────────────────────── */
+
+const STORAGE_KEY = 'decrypt-message-input'
 
 export function DecryptMessage() {
   const toast = useToast()
 
-  const [inputValue, setInputValue] = useState('')
+  // Initialize input value from localStorage
+  const [inputValue, setInputValue] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY) || ''
+    } catch {
+      return ''
+    }
+  })
   const [passphrase, setPassphrase] = useState('')
   const [decodedMessage, setDecodedMessage] = useState<string | null>(null)
   const [decryptedMessage, setDecryptedMessage] = useState<string | null>(null)
@@ -106,20 +46,33 @@ export function DecryptMessage() {
   const [isDecoding, setIsDecoding] = useState(false)
   const [showResult, setShowResult] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [recoveredAddress, setRecoveredAddress] = useState<Address | null>(null)
+  const [identifiedTemplate, setIdentifiedTemplate] = useState<MessageTemplate | null>(null)
+  const [extractedData, setExtractedData] = useState<ExtractedTemplateData | null>(null)
+  const [parsedTransaction, setParsedTransaction] = useState<ParsedTransaction | null>(null)
+  const [isFetchingTransaction, setIsFetchingTransaction] = useState(false)
+  const [chainId, setChainId] = useState<string>('1')
 
-  // Scramble effect while decoding
-  const scrambled = useScrambleText(decodedMessage, isDecoding, 900)
+  // Track last processed input to prevent re-processing
+  const lastProcessedInputRef = useRef<string>('')
 
   // Detect input type
   const inputTrimmed = inputValue.trim()
   const inputIsTxHash = isTxHash(inputTrimmed)
 
   const handleDecode = useCallback(async () => {
+    // Mark that we're processing this input
+    lastProcessedInputRef.current = inputTrimmed
+
     setError(null)
     setDecodedMessage(null)
     setDecryptedMessage(null)
     setTxMeta(null)
     setShowResult(false)
+    setRecoveredAddress(null)
+    setIdentifiedTemplate(null)
+    setExtractedData(null)
+    setParsedTransaction(null)
 
     // Validate transaction hash format if applicable
     if (inputIsTxHash) {
@@ -137,15 +90,16 @@ export function DecryptMessage() {
 
       if (inputIsTxHash) {
         // Fetch transaction from blockchain RPC with retry logic
+        const selectedChainId = chainId ? parseInt(chainId, 10) : undefined
         const tx = await withRetry(
-          async () => fetchTransaction(inputTrimmed as `0x${string}`),
+          async () => fetchTransaction(inputTrimmed as Hex, selectedChainId),
           {
             maxAttempts: 3,
             delayMs: 1500,
             backoff: true,
           }
         )
-        
+
         calldata = tx.input
         setTxMeta({
           from: tx.from,
@@ -156,7 +110,8 @@ export function DecryptMessage() {
 
         if (!calldata || calldata === '0x') {
           setIsDecoding(false)
-          setError('Transaction has no calldata (empty input). This transaction doesn\'t contain a message.')
+          setError(`Transaction ${tx.hash.slice(0, 10)}...${tx.hash.slice(-8)} on ${chains[tx.chainId]?.name || `Chain ${tx.chainId}`} has no calldata (empty input). This is likely a simple ETH transfer and doesn't contain a message.`)
+          setShowResult(true)
           return
         }
       } else {
@@ -164,8 +119,8 @@ export function DecryptMessage() {
         calldata = inputTrimmed.startsWith('0x') ? inputTrimmed : `0x${inputTrimmed}`
       }
 
-      const decoded = decodeMessage(calldata as `0x${string}`)
-      if (!isLikelyText(calldata as `0x${string}`)) {
+      const decoded = decodeMessage(calldata as Hex)
+      if (!isLikelyText(calldata as Hex)) {
         setError('The decoded data does not appear to be a text message. It may be contract call data.')
         setDecodedMessage(decoded)
         setIsDecoding(false)
@@ -173,6 +128,29 @@ export function DecryptMessage() {
         return
       }
       setDecodedMessage(decoded)
+
+      // Try to identify which template this message matches
+      const template = identifyTemplate(decoded)
+      setIdentifiedTemplate(template)
+
+      // Extract structured data from the template
+      if (template) {
+        const extracted = extractTemplateData(decoded, template)
+        setExtractedData(extracted)
+      } else {
+        setExtractedData(null)
+      }
+
+      // Check if the decoded message matches the signed message format
+      const parsedSigned = parseSignedMessage(decoded)
+      let recovered: Address | null = null
+      if (parsedSigned) {
+        // Try to recover the address from the signature
+        recovered = await recoverAddressFromSignedMessage(parsedSigned)
+        setRecoveredAddress(recovered)
+      } else {
+        setRecoveredAddress(null)
+      }
 
       // Let scramble animation play, then reveal
       setTimeout(() => {
@@ -186,6 +164,13 @@ export function DecryptMessage() {
             status: 'info',
             duration: 4000,
           })
+        } else if (parsedSigned && recovered) {
+          toast({
+            title: '✓ Signature verified',
+            description: `Message signed by ${recovered.slice(0, 6)}...${recovered.slice(-4)}`,
+            status: 'success',
+            duration: 4000,
+          })
         }
       }, 950)
     } catch (err) {
@@ -194,13 +179,161 @@ export function DecryptMessage() {
         component: 'DecryptMessage',
         inputType: inputIsTxHash ? 'txHash' : 'calldata',
       })
-      
+
       logErrorContext(errorContext, 'DecryptMessage.handleDecode')
-      
+
       // Show contextual error message
       setError(`${errorContext.userMessage}: ${errorContext.actionableSteps.join(' • ')}`)
     }
   }, [inputTrimmed, inputIsTxHash, toast])
+
+  // Persist input value to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      if (inputValue.trim()) {
+        localStorage.setItem(STORAGE_KEY, inputValue)
+      } else {
+        localStorage.removeItem(STORAGE_KEY)
+      }
+    } catch {
+      // Ignore localStorage errors (e.g., in private browsing mode)
+    }
+  }, [inputValue])
+
+  // Auto-process input when valid (moved after handleDecode definition)
+  useEffect(() => {
+    // Clear results if input is cleared
+    if (!inputTrimmed) {
+      lastProcessedInputRef.current = ''
+      setError(null)
+      setDecodedMessage(null)
+      setDecryptedMessage(null)
+      setTxMeta(null)
+      setShowResult(false)
+      setRecoveredAddress(null)
+      setIdentifiedTemplate(null)
+      setExtractedData(null)
+      setParsedTransaction(null)
+      return
+    }
+
+    // Don't process if already decoding or if we've already processed this exact input
+    if (isDecoding || lastProcessedInputRef.current === inputTrimmed) {
+      return
+    }
+
+    // For transaction hashes, wait for complete hash (66 chars: 0x + 64 hex chars)
+    if (inputIsTxHash) {
+      if (inputTrimmed.length === 66) {
+        // Complete tx hash, process immediately
+        lastProcessedInputRef.current = inputTrimmed
+        handleDecode()
+      }
+      return
+    }
+
+    // For raw calldata, debounce and process when we have enough characters
+    // Minimum: at least 4 hex chars (2 bytes) after 0x prefix, or 2 chars without prefix
+    const minLength = inputTrimmed.startsWith('0x') ? 6 : 2
+    if (inputTrimmed.length < minLength) {
+      return
+    }
+
+    // Debounce: wait 500ms after user stops typing
+    const timeoutId = setTimeout(() => {
+      // Double-check we haven't processed this input while waiting
+      if (lastProcessedInputRef.current !== inputTrimmed && !isDecoding) {
+        lastProcessedInputRef.current = inputTrimmed
+        handleDecode()
+      }
+    }, 500)
+
+    return () => clearTimeout(timeoutId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputTrimmed, inputIsTxHash, isDecoding])
+
+  const handleFetchTransaction = useCallback(async () => {
+    if (!extractedData?.theftTxHash) return
+
+    setIsFetchingTransaction(true)
+    setError(null)
+
+    try {
+      // Try to get chain ID from extracted data first, then fall back to txMeta
+      // extractedData.chainId is a string, so check if it exists and is not empty
+      let chainId: number | undefined
+      if (extractedData.chainId && extractedData.chainId.trim()) {
+        const parsed = parseInt(extractedData.chainId)
+        if (!isNaN(parsed) && parsed > 0) {
+          chainId = parsed
+        }
+      }
+
+      // Fall back to txMeta chainId if not found in extracted data
+      if (chainId === undefined) {
+        chainId = txMeta?.chainId
+      }
+
+      if (typeof chainId !== 'number') {
+        setError('Chain ID is required to fetch transaction. Please ensure the message includes a chain ID or decode a transaction hash first.')
+        setIsFetchingTransaction(false)
+        return
+      }
+
+      const parsed = await parseTheftTransaction(extractedData.theftTxHash, chainId)
+      setParsedTransaction(parsed)
+
+      toast({
+        title: '✓ Transaction Parsed',
+        description: `Found ${parsed.transfers.length} transfers`,
+        status: 'success',
+        duration: 3000,
+      })
+    } catch (err) {
+      const errorContext = classifyError(err, {
+        component: 'DecryptMessage',
+        action: 'fetchTransaction',
+      })
+      logErrorContext(errorContext, 'DecryptMessage.handleFetchTransaction')
+
+      const chainId = extractedData.chainId ? parseInt(extractedData.chainId) : (txMeta?.chainId || 1)
+
+      // Check if chain is in the supported networks list
+      const supportedChainIds = networks.map(n => Number(n.id))
+      const isUnsupportedChain = !supportedChainIds.includes(chainId)
+      const chainName = networks.find(n => Number(n.id) === chainId)?.name || `Chain ${chainId}`
+
+      // Provide detailed error message based on error type
+      let errorMessage: string
+      const originalError = err instanceof Error ? err.message : String(err)
+
+      // Check if backend server is not running
+      if (originalError.includes('ECONNREFUSED') || originalError.includes('Failed to connect') || originalError.includes('Network error')) {
+        errorMessage = `Backend API server is not running. Please start it with: cd api && yarn run dev`
+      } else if (errorContext.userMessage.includes('Unsupported chain') || isUnsupportedChain) {
+        errorMessage = `${chainName} (${chainId}) is not supported for transaction parsing. Transaction parsing uses Etherscan-compatible APIs. Supported chains: ${supportedChainIds.slice(0, 10).join(', ')}${supportedChainIds.length > 10 ? `, and ${supportedChainIds.length - 10} more` : ''}. Note: Some chains like PulseChain (369) don't have Etherscan-compatible APIs.`
+      } else if (errorContext.userMessage.includes('not found') || errorContext.userMessage.includes('Transaction not found') || originalError.includes('not found')) {
+        errorMessage = `Transaction not found on ${chainName} (${chainId}) via Etherscan API. Possible reasons: (1) Transaction hash is incorrect, (2) Transaction is on a different network, (3) Transaction is too recent and not yet indexed, or (4) This chain may not have an Etherscan-compatible API.`
+      } else if (errorContext.userMessage.includes('rate limit') || originalError.includes('rate limit')) {
+        errorMessage = `Etherscan API rate limit exceeded. Please wait a moment and try again.`
+      } else {
+        // Show the actual error message instead of generic "unexpected error"
+        errorMessage = `Failed to fetch transaction via Etherscan API: ${originalError}`
+      }
+
+      setError(errorMessage)
+
+      toast({
+        title: '⚠️ Transaction Fetch Failed',
+        description: errorMessage,
+        status: 'error',
+        duration: 6000,
+        isClosable: true,
+      })
+    } finally {
+      setIsFetchingTransaction(false)
+    }
+  }, [extractedData, txMeta, toast, networks])
 
   const handleDecrypt = useCallback(async () => {
     if (!decodedMessage || !passphrase) return
@@ -220,11 +353,11 @@ export function DecryptMessage() {
         component: 'DecryptMessage',
         action: 'decrypt',
       })
-      
+
       logErrorContext(errorContext, 'DecryptMessage.handleDecrypt')
-      
+
       setError(`${errorContext.userMessage}: ${errorContext.actionableSteps.join(' • ')}`)
-      
+
       toast({
         title: '⚠️ Decryption Failed',
         description: errorContext.actionableSteps[0],
@@ -237,467 +370,41 @@ export function DecryptMessage() {
     }
   }, [decodedMessage, passphrase, toast])
 
-  const truncateAddr = (addr: string) => `${addr.slice(0, 6)}…${addr.slice(-4)}`
-
   return (
-    <VStack spacing={4} align="stretch">
-      {/* Input Section */}
-      <Box
-        {...cardStyle}
-        borderColor="rgba(99, 179, 237, 0.12)"
-        position="relative"
-        overflow="hidden"
-        _before={{
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '1px',
-          bgGradient: 'linear(to-r, transparent, rgba(99,179,237,0.3), transparent)',
-        }}
-      >
-        <HStack spacing={3} mb={4}>
-          {/* Lock/key icon badge */}
-          <Box
-            w="32px"
-            h="32px"
-            borderRadius="lg"
-            bg="rgba(99, 179, 237, 0.08)"
-            border="1px solid"
-            borderColor="rgba(99, 179, 237, 0.2)"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            flexShrink={0}
-          >
-            <Text fontSize="sm">🗝️</Text>
-          </Box>
-          <Box>
-            <Text
-              fontSize="xs"
-              fontWeight="800"
-              letterSpacing="0.1em"
-              textTransform="uppercase"
-              color="blue.300"
-            >
-              Decode Calldata
-            </Text>
-            <Text fontSize="xs" color="whiteAlpha.300" mt={0.5}>
-              Paste a transaction hash or raw hex calldata
-            </Text>
-          </Box>
-        </HStack>
+    <VStack spacing={3} align="stretch">
+      <DecryptInput
+        inputValue={inputValue}
+        onInputChange={setInputValue}
+        inputIsTxHash={inputIsTxHash}
+        chainId={chainId}
+        onChainIdChange={setChainId}
+      />
 
-        {/* Input type indicator */}
-        {inputTrimmed && (
-          <HStack mb={2}>
-            <Badge
-              fontSize="9px"
-              fontWeight="700"
-              letterSpacing="0.05em"
-              borderRadius="md"
-              px={2}
-              py={0.5}
-              bg={inputIsTxHash ? 'rgba(159, 122, 234, 0.1)' : 'rgba(99, 179, 237, 0.1)'}
-              color={inputIsTxHash ? 'purple.300' : 'blue.300'}
-              border="1px solid"
-              borderColor={inputIsTxHash ? 'rgba(159, 122, 234, 0.2)' : 'rgba(99, 179, 237, 0.2)'}
-            >
-              {inputIsTxHash ? '🔗 Transaction Hash' : '📦 Raw Calldata'}
-            </Badge>
-            {inputIsTxHash && (
-              <Text fontSize="10px" color="whiteAlpha.300">
-                Will fetch from blockchain RPC
-              </Text>
-            )}
-          </HStack>
-        )}
+      <DecryptError error={error} />
 
-        <Textarea
-          placeholder="0x5c504ed432cb51... (tx hash) or 0x48656c6c6f... (calldata)"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          aria-label="Transaction hash or hex calldata input"
-          fontFamily="mono"
-          fontSize="sm"
-          bg="rgba(6, 6, 15, 0.8)"
-          borderColor="whiteAlpha.100"
-          color="whiteAlpha.700"
-          rows={4}
-          mb={3}
-          _placeholder={{ color: 'whiteAlpha.200' }}
-          _focus={{
-            borderColor: 'blue.400',
-            boxShadow: '0 0 0 1px rgba(99, 179, 237, 0.3), 0 0 20px rgba(99, 179, 237, 0.08)',
-          }}
-        />
-        <Button
-          size="lg"
-          width="full"
-          h="48px"
-          fontSize="sm"
-          fontWeight="800"
-          letterSpacing="0.05em"
-          textTransform="uppercase"
-          onClick={handleDecode}
-          isDisabled={!inputTrimmed || isDecoding}
-          isLoading={isDecoding}
-          loadingText={inputIsTxHash ? 'Fetching tx...' : 'Decoding...'}
-          aria-label="Decode hex calldata into readable message"
-          bg="rgba(99, 179, 237, 0.15)"
-          color="blue.300"
-          border="1px solid"
-          borderColor="rgba(99, 179, 237, 0.25)"
-          borderRadius="xl"
-          _hover={{
-            bg: 'rgba(99, 179, 237, 0.25)',
-            transform: 'translateY(-1px)',
-            boxShadow: '0 4px 20px rgba(99, 179, 237, 0.15)',
-          }}
-          _active={{
-            transform: 'translateY(0)',
-          }}
-          _disabled={{
-            bg: 'whiteAlpha.50',
-            color: 'whiteAlpha.300',
-            borderColor: 'whiteAlpha.50',
-            cursor: 'not-allowed',
-            _hover: {
-              bg: 'whiteAlpha.50',
-              transform: 'none',
-              boxShadow: 'none',
-            },
-          }}
-          transition="all 0.2s"
-        >
-          🔓 Crack It Open
-        </Button>
-      </Box>
+      <DecodingAnimation
+        isDecoding={isDecoding}
+        decodedMessage={decodedMessage}
+        inputIsTxHash={inputIsTxHash}
+      />
 
-      {/* Error */}
-      <Collapse in={!!error} animateOpacity>
-        {error && (
-          <Box
-            p={4}
-            borderRadius="xl"
-            bg="rgba(236, 201, 75, 0.06)"
-            border="1px solid"
-            borderColor="rgba(236, 201, 75, 0.2)"
-          >
-            <HStack>
-              <Text fontSize="sm" color="yellow.300">⚠</Text>
-              <Text fontSize="sm" color="yellow.200">
-                {error}
-              </Text>
-            </HStack>
-          </Box>
-        )}
-      </Collapse>
-
-      {/* Decoding Animation — scramble effect */}
-      <Collapse in={isDecoding} animateOpacity>
-        {isDecoding && (
-          <Box
-            {...cardStyle}
-            borderColor="rgba(99, 179, 237, 0.25)"
-            position="relative"
-            overflow="hidden"
-            animation={`${glowPulse} 1.5s ease-in-out infinite`}
-          >
-            {/* Scan line effect */}
-            <Box
-              position="absolute"
-              left={0}
-              right={0}
-              height="2px"
-              bg="rgba(99, 179, 237, 0.4)"
-              boxShadow="0 0 12px rgba(99, 179, 237, 0.5)"
-              animation={`${scanLine} 1.2s linear infinite`}
-              zIndex={2}
-            />
-            <HStack spacing={2} mb={3}>
-              <Text fontSize="md">⚡</Text>
-              <Text
-                fontSize="xs"
-                fontWeight="800"
-                letterSpacing="0.1em"
-                textTransform="uppercase"
-                color="blue.300"
-              >
-                {inputIsTxHash ? 'Fetching & Decoding...' : 'Decoding...'}
-              </Text>
-            </HStack>
-            <Box
-              bg="rgba(6, 6, 15, 0.9)"
-              p={4}
-              borderRadius="xl"
-              border="1px solid"
-              borderColor="rgba(99, 179, 237, 0.15)"
-              fontFamily="mono"
-              fontSize="sm"
-              color="blue.200"
-              whiteSpace="pre-wrap"
-              lineHeight="1.7"
-              opacity={0.8}
-            >
-              {scrambled || '...'}
-            </Box>
-          </Box>
-        )}
-      </Collapse>
-
-      {/* Decoded Result */}
-      <Collapse in={showResult && decodedMessage !== null} animateOpacity>
-        {showResult && decodedMessage !== null && (
-          <Box
-            {...cardStyle}
-            borderColor="rgba(72, 187, 120, 0.15)"
-            position="relative"
-            overflow="hidden"
-            animation={`${textReveal} 0.4s ease-out`}
-            _before={{
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '1px',
-              bgGradient: 'linear(to-r, transparent, rgba(72,187,120,0.3), transparent)',
-            }}
-          >
-            <HStack spacing={3} mb={4}>
-              <Box
-                w="32px"
-                h="32px"
-                borderRadius="lg"
-                bg="rgba(72, 187, 120, 0.1)"
-                border="1px solid"
-                borderColor="rgba(72, 187, 120, 0.25)"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                flexShrink={0}
-              >
-                <Text fontSize="sm">📬</Text>
-              </Box>
-              <Text
-                fontSize="xs"
-                fontWeight="800"
-                letterSpacing="0.1em"
-                textTransform="uppercase"
-                color="green.300"
-              >
-                Message Decoded
-              </Text>
-            </HStack>
-
-            {/* Transaction metadata (when fetched from chain) */}
-            {txMeta && (
-              <Box
-                mb={4}
-                p={3}
-                bg="rgba(159, 122, 234, 0.04)"
-                borderRadius="lg"
-                border="1px solid"
-                borderColor="rgba(159, 122, 234, 0.12)"
-              >
-                <HStack spacing={4} flexWrap="wrap" gap={2}>
-                  <HStack spacing={1.5}>
-                    <Text fontSize="10px" color="whiteAlpha.400" fontWeight="700" textTransform="uppercase">From</Text>
-                    <Text fontSize="xs" fontFamily="mono" color="purple.300" fontWeight="600">
-                      {truncateAddr(txMeta.from)}
-                    </Text>
-                  </HStack>
-                  {txMeta.to && (
-                    <HStack spacing={1.5}>
-                      <Text fontSize="10px" color="whiteAlpha.400" fontWeight="700" textTransform="uppercase">To</Text>
-                      <Text fontSize="xs" fontFamily="mono" color="purple.300" fontWeight="600">
-                        {truncateAddr(txMeta.to)}
-                      </Text>
-                    </HStack>
-                  )}
-                  <Badge
-                    fontSize="9px"
-                    fontWeight="700"
-                    borderRadius="md"
-                    px={2}
-                    py={0.5}
-                    bg="rgba(255, 255, 255, 0.04)"
-                    color="whiteAlpha.500"
-                    border="1px solid"
-                    borderColor="whiteAlpha.50"
-                  >
-                    {CHAIN_INFO[txMeta.chainId]?.emoji ?? ''} {CHAIN_INFO[txMeta.chainId]?.name ?? `Chain ${txMeta.chainId}`}
-                  </Badge>
-                </HStack>
-              </Box>
-            )}
-
-            <Box
-              bg="rgba(6, 6, 15, 0.9)"
-              p={4}
-              borderRadius="xl"
-              border="1px solid"
-              borderColor="whiteAlpha.50"
-            >
-              <Text
-                fontSize="sm"
-                whiteSpace="pre-wrap"
-                color="whiteAlpha.700"
-                lineHeight="1.7"
-                fontFamily="mono"
-              >
-                {decodedMessage}
-              </Text>
-            </Box>
-
-            {/* Vault-style passphrase input for encrypted messages */}
-            {isEncrypted(decodedMessage) && (
-              <Box
-                mt={5}
-                p={4}
-                borderRadius="xl"
-                bg="rgba(236, 201, 75, 0.04)"
-                border="1px solid"
-                borderColor="rgba(236, 201, 75, 0.15)"
-                position="relative"
-                overflow="hidden"
-                animation={`${vaultPulse} 3s ease-in-out infinite`}
-                _before={{
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '1px',
-                  bgGradient: 'linear(to-r, transparent, rgba(236,201,75,0.3), transparent)',
-                }}
-              >
-                <HStack spacing={3} mb={3}>
-                  <Box
-                    w="28px"
-                    h="28px"
-                    borderRadius="lg"
-                    bg="rgba(236, 201, 75, 0.1)"
-                    border="1px solid"
-                    borderColor="rgba(236, 201, 75, 0.25)"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    flexShrink={0}
-                  >
-                    <Text fontSize="xs">🔐</Text>
-                  </Box>
-                  <Box>
-                    <Text
-                      fontSize="xs"
-                      color="yellow.300"
-                      fontWeight="800"
-                      letterSpacing="0.08em"
-                      textTransform="uppercase"
-                    >
-                      Encrypted Payload
-                    </Text>
-                    <Text fontSize="xs" color="whiteAlpha.300" mt={0.5}>
-                      Enter the passphrase to unlock this message
-                    </Text>
-                  </Box>
-                </HStack>
-                <HStack spacing={2}>
-                  <Input
-                    placeholder="Enter passphrase..."
-                    value={passphrase}
-                    onChange={(e) => setPassphrase(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && passphrase) handleDecrypt()
-                    }}
-                    aria-label="Decryption passphrase"
-                    type="password"
-                    fontSize="sm"
-                    fontFamily="mono"
-                    bg="rgba(6, 6, 15, 0.8)"
-                    borderColor="rgba(236, 201, 75, 0.15)"
-                    color="yellow.100"
-                    h="44px"
-                    letterSpacing="0.15em"
-                    _placeholder={{ color: 'whiteAlpha.200', letterSpacing: '0.02em' }}
-                    _focus={{
-                      borderColor: 'yellow.400',
-                      boxShadow: '0 0 0 1px rgba(236, 201, 75, 0.3), 0 0 16px rgba(236, 201, 75, 0.08)',
-                    }}
-                  />
-                  <Button
-                    h="44px"
-                    px={6}
-                    fontSize="sm"
-                    fontWeight="800"
-                    letterSpacing="0.04em"
-                    textTransform="uppercase"
-                    bg="rgba(236, 201, 75, 0.15)"
-                    color="yellow.300"
-                    border="1px solid"
-                    borderColor="rgba(236, 201, 75, 0.25)"
-                    borderRadius="lg"
-                    onClick={handleDecrypt}
-                    isLoading={isDecrypting}
-                    loadingText="..."
-                    isDisabled={!passphrase}
-                    aria-label="Decrypt message with passphrase"
-                    _hover={{
-                      bg: 'rgba(236, 201, 75, 0.25)',
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 4px 16px rgba(236, 201, 75, 0.12)',
-                    }}
-                    _active={{ transform: 'translateY(0)' }}
-                    _disabled={{
-                      opacity: 0.4,
-                      cursor: 'not-allowed',
-                      _hover: { bg: 'rgba(236, 201, 75, 0.15)', transform: 'none', boxShadow: 'none' },
-                    }}
-                    transition="all 0.2s"
-                  >
-                    🗝️ Unlock
-                  </Button>
-                </HStack>
-              </Box>
-            )}
-
-            {/* Decrypted result */}
-            <Collapse in={!!decryptedMessage} animateOpacity>
-              {decryptedMessage && (
-                <Box
-                  mt={4}
-                  p={4}
-                  bg="rgba(72, 187, 120, 0.08)"
-                  borderRadius="xl"
-                  border="1px solid"
-                  borderColor="rgba(72, 187, 120, 0.25)"
-                  animation={`${textReveal} 0.4s ease-out`}
-                >
-                  <HStack spacing={2} mb={2}>
-                    <Text fontSize="sm">🔓</Text>
-                    <Text fontSize="xs" color="green.300" fontWeight="800" letterSpacing="0.08em" textTransform="uppercase">
-                      Unlocked
-                    </Text>
-                  </HStack>
-                  <Code
-                    bg="transparent"
-                    color="green.300"
-                    whiteSpace="pre-wrap"
-                    display="block"
-                    fontSize="sm"
-                    fontFamily="mono"
-                    lineHeight="1.7"
-                  >
-                    {decryptedMessage}
-                  </Code>
-                </Box>
-              )}
-            </Collapse>
-          </Box>
-        )}
-      </Collapse>
+      <DecodedResult
+        showResult={showResult}
+        decodedMessage={decodedMessage}
+        txMeta={txMeta}
+        recoveredAddress={recoveredAddress}
+        identifiedTemplate={identifiedTemplate}
+        extractedData={extractedData}
+        parsedTransaction={parsedTransaction}
+        chainId={txMeta?.chainId}
+        onFetchTransaction={handleFetchTransaction}
+        isFetchingTransaction={isFetchingTransaction}
+        passphrase={passphrase}
+        onPassphraseChange={setPassphrase}
+        onDecrypt={handleDecrypt}
+        isDecrypting={isDecrypting}
+        decryptedMessage={decryptedMessage}
+      />
     </VStack>
   )
 }
