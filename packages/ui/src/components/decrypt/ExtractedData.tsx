@@ -110,7 +110,7 @@ export function ExtractedData({
       boxShadow={blueBorderShadow}
     >
       <ExtractedDataHeader
-        template={template}
+        template={template ?? null}
         parsedSigned={parsedSigned}
         recoveredAddress={recoveredAddress || undefined}
         extractedData={extractedData}

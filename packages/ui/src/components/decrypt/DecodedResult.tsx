@@ -155,7 +155,7 @@ export function DecodedResult({
 
             {(extractedData || identifiedTemplate || recoveredAddress) && (
               <ExtractedData
-                extractedData={extractedData || {}}
+                extractedData={extractedData ?? null}
                 parsedTransaction={parsedTransaction}
                 chainId={chainId}
                 onFetchTransaction={onFetchTransaction}
