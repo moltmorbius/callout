@@ -5,7 +5,7 @@
  * to the chain RPC, no explorer API needed.
  */
 
-import { createPublicClient, http, type Chain } from 'viem'
+import { createPublicClient, http, type Chain, type Hex } from 'viem'
 import { mainnet, polygon, arbitrum, optimism, base, bsc } from 'viem/chains'
 
 /* ── PulseChain definition ───────────────────────────────── */
@@ -24,7 +24,7 @@ const pulsechain: Chain = {
 
 /* ── Chain registry ──────────────────────────────────────── */
 
-const chains: Record<number, Chain> = {
+export const chains: Record<number, Chain> = {
   1: mainnet,
   369: pulsechain,
   137: polygon,
@@ -37,8 +37,8 @@ const chains: Record<number, Chain> = {
 /** All supported chain IDs */
 export const SUPPORTED_CHAIN_IDS = Object.keys(chains).map(Number)
 
-/** Default chain for tx lookup when none specified */
-export const DEFAULT_CHAIN_ID = 369
+/** Default chain for tx lookup when none specified - prioritize Ethereum mainnet */
+export const DEFAULT_CHAIN_ID = 1
 
 /* ── Client cache ────────────────────────────────────────── */
 
@@ -72,16 +72,17 @@ export interface TransactionResult {
  *
  * Tries the specified chain first. If not found and no chain was
  * specified, falls back to trying all supported chains.
- * 
+ *
  * Throws descriptive errors for better error handling.
  */
 export async function fetchTransaction(
-  hash: `0x${string}`,
+  hash: Hex,
   chainId?: number,
 ): Promise<TransactionResult> {
+  // When no chainId specified, try Ethereum mainnet first (most common), then other chains
   const chainsToTry = chainId
     ? [chainId]
-    : [DEFAULT_CHAIN_ID, ...SUPPORTED_CHAIN_IDS.filter((id) => id !== DEFAULT_CHAIN_ID)]
+    : [1, ...SUPPORTED_CHAIN_IDS.filter((id) => id !== 1)]
 
   let lastError: Error | null = null
 
@@ -100,13 +101,13 @@ export async function fetchTransaction(
       }
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err))
-      
+
       // If we're only checking one chain, provide more specific error
       if (chainId) {
         const chainName = chains[chainId]?.name || `Chain ${chainId}`
         throw new Error(`Transaction not found on ${chainName}. Verify the hash and network.`)
       }
-      
+
       // Transaction not found on this chain — try next
       continue
     }
@@ -114,8 +115,7 @@ export async function fetchTransaction(
 
   // Exhausted all chains
   throw new Error(
-    `Transaction not found on any supported chain. ${
-      lastError?.message ? `Last error: ${lastError.message}` : ''
+    `Transaction not found on any supported chain. ${lastError?.message ? `Last error: ${lastError.message}` : ''
     }`
   )
 }

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { encodeMessage, decodeMessage, isLikelyText } from './encoding'
+import { type Hex } from 'viem'
 
 describe('encodeMessage', () => {
   it('encodes an ASCII string to hex', () => {
@@ -72,7 +73,7 @@ describe('isLikelyText', () => {
 
   it('returns false for binary-looking data', () => {
     // Construct hex that decodes to mostly non-printable bytes
-    const binaryHex = '0x0001020304050607080b0c0e0f101112131415161718191a1b1c1d1e1f' as `0x${string}`
+    const binaryHex = '0x0001020304050607080b0c0e0f101112131415161718191a1b1c1d1e1f' as Hex
     expect(isLikelyText(binaryHex)).toBe(false)
   })
 

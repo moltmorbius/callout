@@ -61,8 +61,8 @@ Callout encodes human-readable messages as UTF-8 hex in transaction input data (
 ## Setup
 
 ```bash
-npm install
-npm run dev
+yarn
+yarn run dev
 ```
 
 ### Environment Variables

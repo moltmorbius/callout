@@ -150,3 +150,8 @@ export function getExplorerTxUrl(chainId: number, txHash: string): string {
   const base = explorerUrls[chainId] || 'https://etherscan.io'
   return `${base}/tx/${txHash}`
 }
+
+export function getExplorerAddressUrl(chainId: number, address: string): string {
+  const base = explorerUrls[chainId] || 'https://etherscan.io'
+  return `${base}/address/${address}`
+}

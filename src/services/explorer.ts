@@ -7,6 +7,7 @@
 
 import type { Callout } from '../types/callout'
 import { isLikelyText } from '../utils/encoding'
+import { type Hex } from 'viem'
 
 /* ── Constants ───────────────────────────────────────────── */
 
@@ -56,7 +57,7 @@ export interface BlockScoutTxListResponse {
 /**
  * Fetch transactions sent FROM a given address on PulseChain.
  * Returns the raw BlockScout response with pagination support.
- * 
+ *
  * Throws descriptive errors for better error handling.
  */
 export async function fetchAddressTransactions(
@@ -77,12 +78,12 @@ export async function fetchAddressTransactions(
   }
 
   const res = await fetch(url.toString())
-  
+
   // BlockScout returns 404 for addresses with no transactions
   if (res.status === 404) {
     return { items: [], next_page_params: null }
   }
-  
+
   if (!res.ok) {
     if (res.status >= 500) {
       throw new Error(`BlockScout API is temporarily unavailable (${res.status}). Try again in a moment.`)
@@ -123,7 +124,7 @@ function tryDecodeCalldata(rawInput: string): string | null {
       if (firstByte < 0x20 || firstByte > 0x7e) return null
     }
 
-    if (!isLikelyText(hex as `0x${string}`)) return null
+    if (!isLikelyText(hex as Hex)) return null
 
     const bytes = new Uint8Array(
       (hex.slice(2).match(/.{2}/g) ?? []).map((b) => parseInt(b, 16)),

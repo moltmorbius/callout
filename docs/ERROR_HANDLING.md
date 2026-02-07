@@ -39,9 +39,9 @@ try {
     component: 'MessageComposer',
     action: 'sendTransaction',
   })
-  
+
   logErrorContext(errorContext, 'MessageComposer')
-  
+
   // Show user-friendly error
   toast({
     title: errorContext.userMessage,
@@ -215,7 +215,7 @@ const tx = await withRetry(() => fetchTransaction(hash))
 Error handling is fully tested. Run tests with:
 
 ```bash
-npm test -- errorHandling.test.ts
+yarn run test -- errorHandling.test.ts
 ```
 
 Tests cover:
@@ -252,7 +252,7 @@ To integrate with error tracking services (Sentry, LogRocket, etc.), update `log
 export function logErrorContext(errorContext: ErrorContext, component?: string): void {
   // Development logging
   logError(component, errorContext)
-  
+
   // Production tracking
   if (import.meta.env.PROD) {
     Sentry.captureException(errorContext.originalError, {

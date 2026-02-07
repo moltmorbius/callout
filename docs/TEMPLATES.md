@@ -256,7 +256,7 @@ describe('my-new-template', () => {
 
 ### Step 3: Test in UI
 
-1. Run the app: `npm run dev`
+1. Run the app: `yarn run dev`
 2. Go to "Send Callout" tab
 3. Select your new category
 4. Find your new template

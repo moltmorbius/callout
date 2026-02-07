@@ -33,7 +33,7 @@ git clone https://github.com/moltmorbius/callout.git
 cd callout
 
 # Install dependencies
-npm install
+yarn
 
 # Copy environment template
 cp .env.example .env
@@ -62,7 +62,7 @@ VITE_ANALYTICS_ID=
 ### Run Locally
 
 ```bash
-npm run dev
+yarn run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173)
@@ -70,7 +70,7 @@ Open [http://localhost:5173](http://localhost:5173)
 ### Build for Production
 
 ```bash
-npm run build
+yarn run build
 ```
 
 Output: `dist/`
@@ -78,7 +78,7 @@ Output: `dist/`
 ### Preview Production Build
 
 ```bash
-npm run preview
+yarn run preview
 ```
 
 ---
@@ -206,8 +206,8 @@ Prefix with `[Pixel 🎨]` for bot commits (convention).
 
 1. Create a feature branch
 2. Make changes
-3. Run tests: `npm test`
-4. Build: `npm run build`
+3. Run tests: `yarn test`
+4. Build: `yarn run build`
 5. Commit with conventional message
 6. Push and open PR
 7. Wait for CI (tests + build)
@@ -222,16 +222,16 @@ Prefix with `[Pixel 🎨]` for bot commits (convention).
 
 ```bash
 # All tests
-npm test
+yarn test
 
 # Watch mode
-npm run test:watch
+yarn run test:watch
 
 # Specific file
-npm test src/utils/encoding.test.ts
+yarn test src/utils/encoding.test.ts
 
 # Coverage (not configured yet)
-npm test -- --coverage
+yarn test -- --coverage
 ```
 
 ### Test Structure
@@ -527,7 +527,7 @@ function MyComponent() {
 ### Build
 
 ```bash
-npm run build
+yarn run build
 ```
 
 Output in `dist/`.
@@ -536,7 +536,7 @@ Output in `dist/`.
 
 ```bash
 # Install Vercel CLI
-npm i -g vercel
+yarn i -g vercel
 
 # Deploy
 vercel
@@ -547,14 +547,14 @@ Or connect GitHub repo to Vercel dashboard.
 **Environment variables:**
 - Add `VITE_REOWN_PROJECT_ID` in Vercel dashboard
 - Framework preset: **Vite**
-- Build command: `npm run build`
+- Build command: `yarn run build`
 - Output directory: `dist`
 
 ### Deploying to Netlify
 
 ```bash
 # Install Netlify CLI
-npm i -g netlify-cli
+yarn i -g netlify-cli
 
 # Deploy
 netlify deploy --prod
@@ -563,7 +563,7 @@ netlify deploy --prod
 Or drag `dist/` folder into Netlify dashboard.
 
 **Settings:**
-- Build command: `npm run build`
+- Build command: `yarn run build`
 - Publish directory: `dist`
 - Add env var: `VITE_REOWN_PROJECT_ID`
 
@@ -578,7 +578,7 @@ export default defineConfig({
 })
 
 # Build
-npm run build
+yarn run build
 
 # Deploy
 gh-pages -d dist
@@ -608,8 +608,8 @@ For custom domain (e.g., `callout.city`):
 2. **Create a feature branch:** `git checkout -b feat/my-feature`
 3. **Make changes**
 4. **Write tests** (if applicable)
-5. **Run tests:** `npm test`
-6. **Build:** `npm run build`
+5. **Run tests:** `yarn test`
+6. **Build:** `yarn run build`
 7. **Commit:** Use conventional commits
 8. **Push:** `git push origin feat/my-feature`
 9. **Open a PR** on GitHub
@@ -662,21 +662,21 @@ Larger features:
 
 ### Build Fails
 
-**Problem:** `npm run build` fails with error
+**Problem:** `yarn run build` fails with error
 
 **Common causes:**
 - TypeScript errors (run `npx tsc --noEmit`)
-- Missing dependencies (run `npm install`)
-- Out of memory (increase Node heap: `NODE_OPTIONS=--max-old-space-size=4096 npm run build`)
+- Missing dependencies (run `yarn install`)
+- Out of memory (increase Node heap: `NODE_OPTIONS=--max-old-space-size=4096 yarn run build`)
 
 ### Tests Fail
 
-**Problem:** `npm test` shows failures
+**Problem:** `yarn test` shows failures
 
 **Solutions:**
 - Check if mocks are set up correctly
 - Verify happy-dom is installed
-- Run individual test: `npm test <file>`
+- Run individual test: `yarn test <file>`
 - Check for async timing issues
 
 ### Wallet Connection Fails in Dev
@@ -695,7 +695,7 @@ Larger features:
 **Problem:** Changes don't reflect after save
 
 **Solutions:**
-- Restart dev server: `npm run dev`
+- Restart dev server: `yarn run dev`
 - Clear Vite cache: `rm -rf node_modules/.vite`
 - Check file watcher limits (Linux): `echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p`
 
