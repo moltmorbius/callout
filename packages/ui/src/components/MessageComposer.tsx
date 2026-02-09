@@ -36,7 +36,8 @@ export function MessageComposer() {
   const { open } = useAppKit()
 
   // Card styles - use container mode (with padding) for cards that contain content
-  const cardStyleContainer = useCardStyle(true)
+  const cardStyleContainer = useCardStyle(false)
+  const cardStyleContainerWithPadding = useCardStyle(true)
 
   // Theme-aware text colors
   const textSecondary = useThemeTextColor('secondary')
@@ -436,7 +437,7 @@ export function MessageComposer() {
   return (
     <VStack spacing={4} align="stretch">
       {/* ── Network & Target Address (combined) ── */}
-      <Box {...cardStyleContainer}>
+      <Box {...cardStyleContainerWithPadding}>
         <SectionLabel icon="🎯" label="Network & Target Address" accent={textSecondary} />
         <HStack spacing={3} align="stretch">
           <NetworkSelector noCard={true} />
@@ -456,6 +457,7 @@ export function MessageComposer() {
 
       {/* ── Message Template Section ── */}
       <Box {...cardStyleContainer}>
+        <VStack spacing={4} align="stretch" {...cardStyleContainerWithPadding}>
         <SectionLabel icon="✉" label="Compose Message" />
 
         {/* Template selector or custom mode */}
@@ -489,8 +491,12 @@ export function MessageComposer() {
               chainId={chainId}
             />
             {/* Multi-state preview - shows template, interpolated, hex, and encrypted hex */}
-            {(finalMessage || calldata) && (
-              <Box mt={4} mx={{ base: -4, md: -6 }}>
+          </>
+        )}
+        </VStack>
+        {selectedTemplate && !isCustomMode && (
+            (finalMessage || calldata) && (
+              // <Box mt={4} mx={{ base: -4, md: -6 }} overflow="hidden">
                 <MessageStatePreview
                   template={selectedTemplate?.template}
                   interpolatedMessage={finalMessage}
@@ -499,9 +505,7 @@ export function MessageComposer() {
                   encryptEnabled={encryptEnabled && !!encryptPublicKey}
                   selectedTemplate={selectedTemplate}
                 />
-              </Box>
-            )}
-          </>
+          )
         )}
 
         {/* Custom message mode */}
@@ -524,7 +528,7 @@ export function MessageComposer() {
             />
             {/* Multi-state preview for custom mode */}
             {(customMessage || calldata) && (
-              <Box mt={4} mx={{ base: -4, md: -6 }}>
+              <Box mt={4} mx={{ base: -4, md: -6 }} overflow="hidden">
                 <MessageStatePreview
                   interpolatedMessage={customMessage}
                   hexCalldata={nonEncryptedCalldata}

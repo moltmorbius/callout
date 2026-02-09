@@ -191,7 +191,7 @@ export function MessageStatePreview({
       </HStack>
 
       {/* State panels row */}
-      <HStack align="stretch" spacing={0} w="100%">
+      <HStack align="stretch" spacing={0} w="100%" mt="1px" boxShadow={boxShadowValue}>
         {states.map((state, index) => {
           const isExpanded = expandedStates.has(state.type)
           const isCopied = copiedStates.has(state.type)
@@ -237,20 +237,18 @@ export function MessageStatePreview({
                   />
                 )}
 
-                {/* Rotated whole-word label anchored to bottom */}
+                {/* Rotated whole-word label centered in the bar */}
                 <Box
                   position="relative"
                   w="40px"
-                  h="70px"
+                  h="100px"
                   overflow="hidden"
                   flexShrink={0}
                 >
                   <Text
                     position="absolute"
-                    bottom="4px"
+                    top="50%"
                     left="50%"
-                    transform="rotate(-90deg)"
-                    transformOrigin="center center"
                     fontSize="9px"
                     fontWeight="700"
                     color={isExpanded ? labelColor : textExtraMuted}
@@ -258,11 +256,8 @@ export function MessageStatePreview({
                     textTransform="uppercase"
                     whiteSpace="nowrap"
                     lineHeight="1"
-                    /* Translate to center the rotated text on the bar's horizontal axis.
-                       After rotation the text's width becomes its visual height, so
-                       translateX(-50%) centers it on left:50%. */
                     sx={{
-                      transform: 'translateX(-50%) rotate(-90deg)',
+                      transform: 'translate(-50%, -50%) rotate(-90deg)',
                     }}
                   >
                     {state.label}
@@ -276,8 +271,9 @@ export function MessageStatePreview({
                   <ThemedReadOnlyDisplay
                     size="xs"
                     p={2}
-                    minH="120px"
+                    minH="152px"
                     maxH="200px"
+                    shadow="none"
                     monospace={state.type === 'hex' || state.type === 'encrypted'}
                     pl={4}
                     pr={2}
