@@ -1,7 +1,7 @@
 import { Box, HStack, Text, Collapse, Divider } from '@chakra-ui/react'
 import { useCardStyle } from '../../shared/styles'
 import { borderRadius } from '../../config/themeTokens'
-import { useThemeBgColor, useThemeTextColor, useAccentBgColor, useAccentBorderColor, useAccentGradient, useAccentTextColor, useGreenVerifiedColors } from '../../shared/useThemeColors'
+import { useThemeBgColor, useThemeTextColor, useAccentGradient, useGreenVerifiedColors } from '../../shared/useThemeColors'
 import { useColorModeValue, VStack } from '@chakra-ui/react'
 import { getThemeValue, boxShadows } from '../../config/themeTokens'
 import { textReveal } from './animations'
@@ -63,11 +63,6 @@ export function DecodedResult({
   const inputBg = useThemeBgColor('input')
   const inputText = useThemeTextColor('primary')
 
-  const greenBorderVerified = useAccentBorderColor('green', 'borderVerified')
-  const decodedBoxShadow = useColorModeValue(
-    getThemeValue(boxShadows.borderAccent, 'light'),
-    `0 0 0 1px ${greenBorderVerified}`
-  )
   const messageBoxShadow = useColorModeValue(
     getThemeValue(boxShadows.borderCard, 'light'),
     getThemeValue(boxShadows.borderCard, 'dark')

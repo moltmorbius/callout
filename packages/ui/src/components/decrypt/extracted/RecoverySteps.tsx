@@ -1,4 +1,4 @@
-import { Box, VStack, HStack, Text, Code, Button, Divider } from '@chakra-ui/react'
+import { Box, VStack, HStack, Text, Code, Button } from '@chakra-ui/react'
 import { borderRadius, boxShadows, getThemeValue } from '../../../config/themeTokens'
 import { useThemeBgColor, useThemeTextColor, useAccentTextColor, useAccentBgColor } from '../../../shared/useThemeColors'
 import { useColorModeValue } from '@chakra-ui/react'

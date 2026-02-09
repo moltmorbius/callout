@@ -4,6 +4,11 @@ import { useThemeBgColor, useThemeTextColor, useAccentBorderColor, useAccentSpec
 import { boxShadows, borderRadius, getThemeValue } from '../config/themeTokens'
 import { useRef, useEffect, useCallback, useState } from 'react'
 
+/** Custom change event that includes a `value` property on the target (like a native textarea). */
+export interface ThemedTextareaChangeEvent extends Omit<React.ChangeEvent<HTMLDivElement>, 'target'> {
+  target: HTMLDivElement & { value: string }
+}
+
 interface ThemedTextareaProps extends Omit<BoxProps, 'bg' | 'color' | 'border' | 'boxShadow' | 'onChange'> {
   /** Accent color for focus/hover states. Defaults to 'purple' */
   accentColor?: 'purple' | 'blue'
@@ -13,8 +18,8 @@ interface ThemedTextareaProps extends Omit<BoxProps, 'bg' | 'color' | 'border' |
   monospace?: boolean
   /** Value of the textarea */
   value?: string
-  /** Callback when value changes */
-  onChange?: (e: React.ChangeEvent<HTMLDivElement>) => void
+  /** Callback when value changes, with a `value` field on e.target */
+  onChange?: (e: ThemedTextareaChangeEvent) => void
   /** Placeholder text */
   placeholder?: string
   /** Whether the textarea is read-only */
@@ -45,7 +50,6 @@ export function ThemedTextarea({
 }: ThemedTextareaProps) {
   const inputBg = useThemeBgColor('input')
   const inputText = useThemeTextColor('primary')
-  const inputPlaceholder = useThemeTextColor('extraMuted')
   const boxShadowValue = useColorModeValue(
     getThemeValue(boxShadows.borderInput, 'light'),
     getThemeValue(boxShadows.borderInput, 'dark')
@@ -91,7 +95,7 @@ export function ThemedTextarea({
         currentTarget: Object.assign(e.currentTarget, {
           value: textContent,
         }),
-      } as unknown as React.ChangeEvent<HTMLDivElement>
+      } as ThemedTextareaChangeEvent
       onChange(syntheticEvent)
     }
   }, [onChange])
@@ -109,7 +113,7 @@ export function ThemedTextarea({
       if (typeof height === 'string') {
         const match = height.match(/(\d+(?:\.\d+)?)(px|rem|em)/)
         if (!match) return 300 // default fallback
-        const value = parseFloat(match[1])
+        const value = parseFloat(match[1] ?? '0')
         const unit = match[2]
         // Convert to px (approximate for rem/em)
         return unit === 'px' ? value : value * 16

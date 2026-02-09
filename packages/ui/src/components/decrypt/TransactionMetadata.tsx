@@ -1,6 +1,6 @@
 import { Box, HStack, Text, Badge } from '@chakra-ui/react'
 import { borderRadius } from '../../config/themeTokens'
-import { useThemeTextColor, useThemeBgColor, useAccentBorderColor, useAccentTextColor, usePurpleMetaColors } from '../../shared/useThemeColors'
+import { useThemeTextColor, useThemeBgColor, useAccentTextColor, usePurpleMetaColors } from '../../shared/useThemeColors'
 import { useColorModeValue } from '@chakra-ui/react'
 import { getThemeValue, boxShadows } from '../../config/themeTokens'
 import { CHAIN_INFO } from '@callout/shared/types'

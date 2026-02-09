@@ -30,7 +30,6 @@ export function useScrollbarStyles(): SystemStyleObject {
   )
 
   const scrollbarColorValue = `${thumbBg} ${trackBg}`
-  const borderValue = `2px solid ${trackBg}`
 
   return {
     // Firefox scrollbar

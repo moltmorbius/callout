@@ -1,8 +1,8 @@
 import { Component, type ReactNode } from 'react'
-import { Box, Text, Button, VStack, Code, useColorModeValue } from '@chakra-ui/react'
+import { Box, Text, Button, VStack, Code } from '@chakra-ui/react'
 import { logError } from '../utils/logger'
 import { borderRadius, boxShadows, getThemeValue, colors } from '../config/themeTokens'
-import { useAccentTextColor, useAccentBgColor, useAccentBorderColor, useRedButtonColors } from '../shared/useThemeColors'
+import { useRedButtonColors } from '../shared/useThemeColors'
 
 /**
  * Button component for ErrorBoundary that can use hooks.
@@ -10,7 +10,6 @@ import { useAccentTextColor, useAccentBgColor, useAccentBorderColor, useRedButto
  */
 function ErrorBoundaryButton() {
   const redButton = useRedButtonColors()
-  const buttonColor = redButton.text
 
   return (
     <Button
@@ -60,9 +59,7 @@ export class ErrorBoundary extends Component<Props, State> {
       // Note: ErrorBoundary is a class component, so we can't use hooks directly
       // We'll use static theme values for dark mode as fallback
       const bgColor = getThemeValue(colors.bg.primary, 'dark')
-      const textColor = getThemeValue(colors.text.primary, 'dark')
       const textMuted = getThemeValue(colors.text.muted, 'dark')
-      const textVeryMuted = getThemeValue(colors.text.veryMuted, 'dark')
       const codeBg = getThemeValue(colors.bg.input, 'dark')
       const codeText = getThemeValue(colors.text.primary, 'dark')
       const borderShadow = getThemeValue(boxShadows.borderCard, 'dark')

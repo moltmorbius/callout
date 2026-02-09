@@ -1,8 +1,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Box, VStack, HStack, Text, Button, useToast } from '@chakra-ui/react'
-import { useColorModeValue } from '@chakra-ui/react'
-import { borderRadius, boxShadows } from '../../config/themeTokens'
-import { useThemeTextColor, useAccentTextColor, useAccentBgColor, useAccentBorderColor, usePurpleMetaColors } from '../../shared/useThemeColors'
+import { borderRadius } from '../../config/themeTokens'
+import { useThemeTextColor, useAccentTextColor, usePurpleMetaColors } from '../../shared/useThemeColors'
 import { ThemedTextarea } from '../../shared/ThemedTextarea'
 import { type BatchRow } from './types'
 

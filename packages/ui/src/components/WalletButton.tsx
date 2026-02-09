@@ -124,14 +124,6 @@ function ConnectedButton({
     getThemeValue(colors.bg.primary, 'dark')
   )
   const statusDotColor = useStatusColor('success')
-  const disconnectShadow = useColorModeValue(
-    `0 0 0 1px ${identiconBorder}`,
-    `0 0 0 1px ${identiconBorder}`
-  )
-  const disconnectHoverShadow = useAccentShadow('red', 'shadow')
-  const disconnectActiveBg = useAccentBgColor('red', 'bgActive')
-  const connectHoverShadow = disconnectHoverShadow
-  const connectActiveBg = disconnectActiveBg
 
   return (
     <Button

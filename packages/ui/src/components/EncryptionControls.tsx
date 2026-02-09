@@ -81,7 +81,7 @@ export function EncryptionControls({
   )
   const greenText = useAccentTextColor('green')
   const orangeText = useAccentTextColor('orange')
-  const redBg = useAccentBgColor('red', 'bgBadge')
+  const redBg = useAccentBgColor('red', 'bg')
   const redText = useAccentTextColor('red')
 
   const isValidTargetAddress = targetAddress ? isAddress(targetAddress) : false

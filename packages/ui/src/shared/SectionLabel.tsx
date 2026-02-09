@@ -1,4 +1,4 @@
-import { HStack, Text, useColorModeValue } from '@chakra-ui/react'
+import { HStack, Text } from '@chakra-ui/react'
 import { useThemeTextColor } from './useThemeColors'
 
 interface SectionLabelProps {

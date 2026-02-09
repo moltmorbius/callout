@@ -89,10 +89,12 @@ export function useColorModeWithSystem() {
       return () => mediaQuery.removeEventListener('change', handleChange)
     }
     // Fallback for older browsers
-    else if (mediaQuery.addListener) {
+    if (mediaQuery.addListener) {
       mediaQuery.addListener(handleChange)
       return () => mediaQuery.removeListener(handleChange)
     }
+
+    return undefined
   }, [])
 
   // Cycle through light -> system -> dark -> light

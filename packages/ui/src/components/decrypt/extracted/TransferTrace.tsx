@@ -1,4 +1,4 @@
-import { Box, VStack, HStack, Text, Code, Divider } from '@chakra-ui/react'
+import { Box, VStack, HStack, Text, Code } from '@chakra-ui/react'
 import { formatUnits, formatEther } from 'viem'
 import { useThemeBgColor, useThemeTextColor, useAccentTextColor } from '../../../shared/useThemeColors'
 import { ChainIcon } from '../../../shared/ChainIcon'
@@ -20,8 +20,6 @@ export function TransferTrace({ parsedTransaction, effectiveChainId }: TransferT
   const blueLight = useAccentTextColor('blueLight')
   const redLight = useAccentTextColor('redLight')
   const greenLight = useAccentTextColor('greenLight')
-  const dividerColor = useThemeBgColor('borderOverlaySubtle')
-
   if (!parsedTransaction.transfers.length) {
     return null
   }

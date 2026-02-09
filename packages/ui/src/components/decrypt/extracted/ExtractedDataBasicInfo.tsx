@@ -1,4 +1,4 @@
-import { Box, VStack, HStack, Text, Code, Link, IconButton, Divider } from '@chakra-ui/react'
+import { Box, VStack, HStack, Text, Code, Link, IconButton } from '@chakra-ui/react'
 import { useState } from 'react'
 import { borderRadius, boxShadows, getThemeValue } from '../../../config/themeTokens'
 import { useThemeBgColor, useThemeTextColor, useAccentTextColor } from '../../../shared/useThemeColors'
@@ -37,7 +37,6 @@ export function ExtractedDataBasicInfo({
     getThemeValue(boxShadows.borderCard, 'light'),
     getThemeValue(boxShadows.borderCard, 'dark')
   )
-  const dividerColor = useThemeBgColor('borderOverlaySubtle')
   const [copied, setCopied] = useState(false)
 
   if (!extractedData?.theftTxHash && !extractedData?.receiveAddress && !extractedData?.chainId && !recoveredAddress) {

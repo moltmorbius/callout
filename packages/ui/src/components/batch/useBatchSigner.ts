@@ -100,7 +100,12 @@ export function useBatchSigner() {
       return
     }
 
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+    const headerLine = lines[0]
+    if (!headerLine) {
+      toast({ title: 'Invalid CSV', description: 'CSV header row is empty', status: 'error', duration: 5000 })
+      return
+    }
+    const headers = headerLine.split(',').map(h => h.trim().toLowerCase())
     const keyIdx = headers.findIndex(h => h === 'victim_private_key' || h === 'private_key' || h === 'key')
     const chainIdx = headers.findIndex(h => h === 'chain_id' || h === 'chain')
     const txIdx = headers.findIndex(h => h === 'tx_hash' || h === 'theft_tx' || h === 'hash')
@@ -118,7 +123,7 @@ export function useBatchSigner() {
 
     const parsed: BatchRow[] = lines.slice(1).map(line => {
       const values = line.split(',').map(v => v.trim())
-      let privateKey = values[keyIdx]
+      let privateKey = values[keyIdx] ?? ''
       if (!privateKey.startsWith('0x')) {
         privateKey = `0x${privateKey}`
       }
@@ -136,7 +141,7 @@ export function useBatchSigner() {
         return {
           privateKey,
           address: victimAddress,
-          chainId: parseInt(values[chainIdx]),
+          chainId: parseInt(values[chainIdx] ?? '0'),
           theftTxHash: values[txIdx],
           scammer: exploiterAddress,
           status: 'pending' as const,
@@ -144,7 +149,7 @@ export function useBatchSigner() {
           message: getRawTemplate(selectedTemplateId), // Initialize with raw template
         }
       } catch (err) {
-        console.error('Invalid private key:', privateKey.slice(0, 10) + '...', err)
+        console.error('Invalid private key:', privateKey?.slice(0, 10) + '...', err)
         return null
       }
     }).filter((row): row is NonNullable<typeof row> =>
@@ -277,10 +282,11 @@ export function useBatchSigner() {
 
       for (let i = 0; i < updated.length; i++) {
         const row = updated[i]
+        if (!row) continue
         // Only update if message doesn't exist or if it's not a custom template (doesn't contain ${})
         // This preserves user edits that are templates
         if (!row.message || (!row.message.includes('${') && row.message !== newTemplateString)) {
-          updated[i].message = newTemplateString
+          row.message = newTemplateString
           needsUpdate = true
         }
       }
@@ -295,7 +301,7 @@ export function useBatchSigner() {
 
     for (let i = 0; i < updated.length; i++) {
       const row = updated[i]
-      if (row.status !== 'pending') continue
+      if (!row || row.status !== 'pending') continue
 
       try {
         row.status = 'signing'
@@ -314,10 +320,10 @@ export function useBatchSigner() {
         row.signature = signature
         row.status = 'signed'
         setRows([...updated])
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Sign error:', err)
         row.status = 'error'
-        row.error = err.message || 'Failed to sign'
+        row.error = err instanceof Error ? err.message : 'Failed to sign'
         setRows([...updated])
       }
     }
@@ -363,11 +369,11 @@ export function useBatchSigner() {
             duration: 2000,
           })
           await switchChain({ chainId })
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error('Chain switch error:', err)
           for (const row of chainRows) {
             row.status = 'error'
-            row.error = `Chain switch failed: ${err.message || 'User rejected'}`
+            row.error = `Chain switch failed: ${err instanceof Error ? err.message : 'User rejected'}`
           }
           setRows([...updated])
           continue
@@ -394,10 +400,10 @@ export function useBatchSigner() {
           row.sentTxHash = hash
           row.status = 'sent'
           setRows([...updated])
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error('Send error:', err)
           row.status = 'error'
-          row.error = err.message || 'Failed to send'
+          row.error = err instanceof Error ? err.message : 'Failed to send'
           setRows([...updated])
         }
       }
@@ -414,38 +420,48 @@ export function useBatchSigner() {
 
   const updateRowMessage = useCallback((index: number, message: string) => {
     const updated = [...rows]
-    updated[index].message = message
+    const row = updated[index]
+    if (!row) return
+    row.message = message
     setRows(updated)
   }, [rows])
 
   const resetRowMessage = useCallback((index: number) => {
     const updated = [...rows]
+    const row = updated[index]
+    if (!row) return
     // Reset to raw template, not interpolated
-    updated[index].message = getRawTemplate(updated[index].templateId)
+    row.message = getRawTemplate(row.templateId)
     setRows(updated)
   }, [rows, getRawTemplate])
 
   const clearSignature = useCallback((index: number) => {
     const updated = [...rows]
-    updated[index].signature = undefined
-    updated[index].status = 'pending'
+    const row = updated[index]
+    if (!row) return
+    row.signature = undefined
+    row.status = 'pending'
     setRows(updated)
   }, [rows])
 
   const clearError = useCallback((index: number) => {
     const updated = [...rows]
-    updated[index].status = 'pending'
-    updated[index].error = undefined
+    const row = updated[index]
+    if (!row) return
+    row.status = 'pending'
+    row.error = undefined
     // Also clear signature if it exists, since we're resetting the row
-    updated[index].signature = undefined
+    row.signature = undefined
     setRows(updated)
   }, [rows])
 
   const clearSending = useCallback((index: number) => {
     const updated = [...rows]
+    const row = updated[index]
+    if (!row) return
     // Reset from "sending" back to "signed" so they can retry
     // Keep the signature since it's still valid
-    updated[index].status = 'signed'
+    row.status = 'signed'
     setRows(updated)
   }, [rows])
 

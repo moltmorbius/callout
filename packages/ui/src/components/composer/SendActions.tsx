@@ -1,7 +1,6 @@
 import { Box, VStack, HStack, Text, Button, Code, Link, Collapse } from '@chakra-ui/react'
 import { useBalance, useEstimateGas } from 'wagmi'
 import { type Address, type Hex, parseEther, formatUnits } from 'viem'
-import { useAppKit } from '@reown/appkit/react'
 import { useCardStyle } from '../../shared/styles'
 import { SectionLabel } from '../../shared/SectionLabel'
 import { borderRadius, boxShadows, getThemeValue } from '../../config/themeTokens'
@@ -42,7 +41,6 @@ export function SendActions({
   onSign,
 }: SendActionsProps) {
   const { address: walletAddress, isConnected } = useAccount()
-  const { open } = useAppKit()
   const cardStyleContainer = useCardStyle(true)
   const { data: balance } = useBalance({ address: walletAddress })
   const { data: gasEstimate } = useEstimateGas(

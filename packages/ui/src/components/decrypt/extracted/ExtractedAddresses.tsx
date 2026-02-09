@@ -1,5 +1,4 @@
-import { Box, VStack, Divider } from '@chakra-ui/react'
-import { useThemeBgColor } from '../../../shared/useThemeColors'
+import { Box, VStack } from '@chakra-ui/react'
 import { DataRow } from './DataRow'
 import { type ExtractedTemplateData } from '@callout/shared/templates'
 
@@ -12,8 +11,6 @@ interface ExtractedAddressesProps {
  * Displays extracted addresses: Exploited Address, Scammer Address, and Contract Address.
  */
 export function ExtractedAddresses({ extractedData, effectiveChainId }: ExtractedAddressesProps) {
-  const dividerColor = useThemeBgColor('borderOverlaySubtle')
-
   if (!extractedData?.exploitedAddress && !extractedData?.scammerAddress && !extractedData?.contractAddress) {
     return null
   }

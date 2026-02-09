@@ -2,8 +2,8 @@ import { Box, HStack, Button, Menu, MenuButton, MenuList, MenuItem } from '@chak
 import { useChainId, useSwitchChain } from 'wagmi'
 import { networks } from '../../config/web3'
 import { useCardStyle } from '../../shared/styles'
-import { useThemeTextColor, useThemeBgColor } from '../../shared/useThemeColors'
-import { borderRadius, boxShadows, getThemeValue } from '../../config/themeTokens'
+import { useThemeBgColor } from '../../shared/useThemeColors'
+import { boxShadows, getThemeValue } from '../../config/themeTokens'
 import { useColorModeValue } from '@chakra-ui/react'
 import { ChainIcon } from '../../shared/ChainIcon'
 
@@ -53,7 +53,7 @@ export function NetworkSelector({ noCard = false }: NetworkSelectorProps = {}) {
             isDisabled={network.id === chainId}
           >
             <HStack spacing={2}>
-              <ChainIcon chainId={network.id} w="20px" h="20px" />
+              <ChainIcon chainId={Number(network.id)} w="20px" h="20px" />
               <span>{network.name}</span>
               {network.id === chainId && <span>✓</span>}
             </HStack>

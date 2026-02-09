@@ -1,4 +1,4 @@
-import { Box, HStack, Text, Collapse, useColorModeValue } from '@chakra-ui/react'
+import { Box, HStack, Text, Collapse } from '@chakra-ui/react'
 import { borderRadius } from '../../config/themeTokens'
 import { useThemeBgColor, useThemeTextColor, useAccentBorderColor, useAccentSpecialColor, useAccentTextColor } from '../../shared/useThemeColors'
 import { scanLine, glowPulse } from './animations'

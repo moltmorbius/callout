@@ -1,4 +1,4 @@
-import { Box, HStack, Text, Button } from '@chakra-ui/react'
+import { HStack, Text, Button } from '@chakra-ui/react'
 import { useState } from 'react'
 import { useThemeTextColor, useThemeBgColor, useAccentTextColor } from '../../shared/useThemeColors'
 import { ThemedTextarea } from '../../shared/ThemedTextarea'
