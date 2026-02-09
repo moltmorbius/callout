@@ -4,7 +4,7 @@ import { isAddress, type Address, type Hex, recoverMessageAddress } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { useToast } from '@chakra-ui/react'
 import { encodeMessage } from '@callout/shared/encoding'
-import { messageTemplates, interpolateTemplate, getTemplateById, type TemplateCategoryId } from '@callout/shared/templates'
+import { messageTemplates, interpolateTemplate as sharedInterpolateTemplate, getTemplateById, type TemplateCategoryId } from '@callout/shared/templates'
 import { type BatchRow, STORAGE_KEY } from './types'
 
 export function useBatchSigner() {
@@ -212,7 +212,7 @@ export function useBatchSigner() {
 
     // Find the template to get variable definitions for proper interpolation
     const template = messageTemplates.find(t => t.id === (row.templateId || selectedTemplateId))
-    return interpolateTemplate(templateString, variables, template)
+    return sharedInterpolateTemplate(templateString, variables, template)
   }, [selectedTemplateId, walletAddress])
 
   /**

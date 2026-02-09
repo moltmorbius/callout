@@ -344,7 +344,7 @@ function viteApiPlugin() {
             txHash: txHash.slice(0, 10) + '...',
           })
 
-          res.json({
+          return res.json({
             victim,
             scammer,
             transfers,
@@ -360,7 +360,7 @@ function viteApiPlugin() {
             chainId: req.body.chainId,
             txHash: req.body.txHash,
           })
-          res.status(500).json({ error: errorMessage })
+          return res.status(500).json({ error: errorMessage })
         }
       })
 

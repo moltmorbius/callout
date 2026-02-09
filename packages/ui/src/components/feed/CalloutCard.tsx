@@ -1,6 +1,5 @@
 import {
   Box,
-  VStack,
   HStack,
   Text,
   Badge,
@@ -9,10 +8,9 @@ import {
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
 import { useCardStyle } from '../../shared/styles'
-import { SectionLabel } from '../../shared/SectionLabel'
 import { colors, boxShadows, getThemeValue, spacing } from '../../config/themeTokens'
 import { useColorModeValue } from '@chakra-ui/react'
-import { useThemeTextColor, useThemeBgColor, useAccentBgColor, useAccentBorderColor, useAccentTextColor, usePurpleMetaColors, useRedMetaColors } from '../../shared/useThemeColors'
+import { useThemeTextColor, useThemeBgColor, useAccentBgColor, useAccentTextColor, usePurpleMetaColors, useRedMetaColors } from '../../shared/useThemeColors'
 import { CHAIN_INFO, getCalloutTxUrl, getCalloutAddressUrl, type Callout } from '@callout/shared/types'
 import { borderRadius } from '../../config/themeTokens'
 import { truncateAddress, formatTimeAgo, truncateMessage } from '@callout/shared/formatting'
