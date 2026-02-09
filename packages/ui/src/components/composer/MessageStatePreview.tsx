@@ -237,7 +237,7 @@ export function MessageStatePreview({
                   />
                 )}
 
-                {/* Rotated whole-word label centered in the bar */}
+                {/* Rotated whole-word label anchored to bottom of bar */}
                 <Box
                   position="relative"
                   w="40px"
@@ -247,7 +247,7 @@ export function MessageStatePreview({
                 >
                   <Text
                     position="absolute"
-                    top="50%"
+                    bottom="4px"
                     left="50%"
                     fontSize="9px"
                     fontWeight="700"
@@ -257,7 +257,8 @@ export function MessageStatePreview({
                     whiteSpace="nowrap"
                     lineHeight="1"
                     sx={{
-                      transform: 'translate(-50%, -50%) rotate(-90deg)',
+                      transformOrigin: '0% 100%',
+                      transform: 'translateX(4.5px) rotate(-90deg)',
                     }}
                   >
                     {state.label}
