@@ -542,11 +542,7 @@ export function MessageComposer() {
 
         {/* Connect Wallet button - at bottom of Compose Message card when not connected */}
         {!isConnected && (
-          <Box
-            mx={{ base: -4, md: -6 }}
-            mt={4}
-            mb={{ base: -4, md: -6 }}
-          >
+          <Box mt={4}>
             <Button
               size="lg"
               width="full"
