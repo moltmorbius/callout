@@ -2,7 +2,7 @@
  * Tests for public key recovery functionality
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import type { Address, Hex } from 'viem'
 import {
   publicKeyToAddress,
