@@ -45,6 +45,9 @@ const NETWORKS: readonly NetworkConfig[] = [
  * keccak256 returns 0x + 64 hex chars (32 bytes).
  * We take the last 20 bytes: skip "0x" (2 chars) + first 12 bytes (24 chars) = slice from index 26.
  * Result: 40 hex chars = 20 bytes = valid Ethereum address.
+ *
+ * @param publicKey - Uncompressed secp256k1 public key in 0x04... format (65 bytes)
+ * @returns Checksummed Ethereum address derived from the public key
  */
 export function publicKeyToAddress(publicKey: Hex): Address {
   // Strip the 04 prefix to get the raw 64-byte x,y coordinates
@@ -74,8 +77,12 @@ interface TxForSigning {
  * Fetch a transaction by hash from the given RPC and recover the sender's
  * uncompressed secp256k1 public key.
  *
- * @param rpcUrl - RPC endpoint URL
- * @param txHash - Transaction hash
+ * @param options - Recovery options
+ * @param options.rpcUrl - RPC endpoint URL for fetching the transaction
+ * @param options.txHash - Transaction hash to fetch and recover from
+ * @returns Uncompressed secp256k1 public key (0x04... format) recovered from the transaction signature
+ * @throws {Error} When the transaction is not found on the network
+ * @throws {Error} When the transaction signature cannot be recovered
  */
 export async function fetchAndRecoverPublicKey({
   rpcUrl,
@@ -124,10 +131,12 @@ export async function fetchAndRecoverPublicKey({
 
 /**
  * Search for a transaction by hash across multiple networks via Etherscan APIs.
+ * Tries each network sequentially until a match is found.
  *
- * @param txHash - Transaction hash to search for
- * @param apiKey - Etherscan API key (required)
- * @returns The matching network config or null if not found
+ * @param txHash - Transaction hash to search for across networks
+ * @param apiKey - Etherscan API key (required for API access)
+ * @returns Network configuration object with chainId and rpcUrl if found, null if not found on any network
+ * @throws Network errors are caught and ignored; function continues to next network
  */
 export async function searchTransactionAcrossChains(
   txHash: string,
@@ -163,12 +172,19 @@ export async function searchTransactionAcrossChains(
 
 // ── Address-based public key recovery ────────────────────────────────
 
-/** Result of a successful public key recovery from an address. */
+/**
+ * Result of a successful public key recovery from an address.
+ */
 export interface RecoveredPublicKey {
+  /** Recovered uncompressed secp256k1 public key in 0x04... format */
   publicKey: Hex
+  /** Ethereum address derived from the recovered public key (for verification) */
   derivedAddress: Address
+  /** Transaction hash used for public key recovery */
   txHash: string
+  /** Chain ID where the transaction was found */
   chainId: number
+  /** Human-readable name of the chain (e.g., 'Ethereum', 'Polygon') */
   chainName: string
 }
 
@@ -179,9 +195,15 @@ export interface RecoveredPublicKey {
  * 3. Recovering the uncompressed secp256k1 public key
  * 4. Verifying the derived address matches the expected address
  *
- * @param address - Ethereum address to recover public key for
- * @param apiKey - Etherscan API key (required)
- * @param preferredChainId - Optional chain to try first
+ * @param options - Recovery options
+ * @param options.address - Ethereum address to recover public key for
+ * @param options.apiKey - Etherscan API key (required for fetching transaction history)
+ * @param options.preferredChainId - Optional chain ID to try first before searching other networks
+ * @returns Recovery result containing the public key, derived address, transaction hash, chain ID, and chain name
+ * @throws {Error} When API key is not provided
+ * @throws {Error} When no outgoing transactions are found for the address on any supported network
+ * @throws {Error} When the derived address does not match the expected address (invalid public key recovery)
+ * @throws {Error} When network requests fail after trying all supported networks
  */
 export async function recoverPublicKeyFromAddress({
   address,
