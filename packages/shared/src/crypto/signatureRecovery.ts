@@ -12,7 +12,13 @@ import { recoverMessageAddress, type Address, type Hex } from 'viem'
  * SIGNATURE: 0x...
  */
 export interface ParsedSignedMessage {
+  /**
+   * The message content extracted from between the quotes in MESSAGE: "..."
+   */
   message: string
+  /**
+   * The hexadecimal signature starting with 0x, extracted from SIGNATURE: 0x...
+   */
   signature: Hex
 }
 
